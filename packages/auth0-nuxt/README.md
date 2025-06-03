@@ -1,34 +1,26 @@
-Auth0-Nuxt Mono Repo, containing SDK for implementing user authentication in Nuxt applications.
+The Auth0 Nuxt SDK is a library for implementing user authentication in Nuxt applications.
 
-![Release](https://img.shields.io/npm/v/@auth0/auth0-auth-js)
-![Downloads](https://img.shields.io/npm/dw/@auth0/auth0-auth-js)
+![Release](https://img.shields.io/npm/v/@auth0/auth0-nuxt)
+![Downloads](https://img.shields.io/npm/dw/@auth0/auth0-nuxt)
 [![License](https://img.shields.io/:license-mit-blue.svg?style=flat)](https://opensource.org/licenses/MIT)
 
-📚 [Packages](#packages) - 💬 [Feedback](#feedback)
+📚 [Documentation](#documentation) - 🚀 [Getting Started](#getting-started) - 💬 [Feedback](#feedback)
 
+## Documentation
 
-## Packages
-- [`auth0-nuxt`](./packages/auth0-nuxt/README.md) - Authentication SDK for Nuxt Applications on JavaScript runtimes.
+- [Examples](https://github.com/auth0/auth0-nuxt/blob/main/packages/auth0-nuxt/EXAMPLES.md) - examples for your different use cases.
+- [Docs Site](https://auth0.com/docs) - explore our docs site and learn more about Auth0.
 
-## Running Examples
+## Getting Started
 
-The following examples can be found in the examples directory:
+### 1. Install the SDK
 
-- [Nuxt Web App Example](./examples/example-nuxt-web/README.md)
-
-Before running the examples, you need to install the dependencies for the monorepo and build all the packages.
-
-1. Install depedencies
-```bash
-$ npm install
+```shell
+npm i @auth0/auth0-nuxt
 ```
 
-2. Build all packages
-```bash
-$ npm run build
-```
+This library requires Node.js 20 LTS and newer LTS versions.
 
-3. Follow example instructions
 
 ## Feedback
 

@@ -1,0 +1,20 @@
+{
+  "name": "auth0-nuxt",
+  "version": "1.0.0",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "clean": "turbo run clean",
+    "test": "turbo run test",
+    "lint": "turbo run lint"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "packageManager": "npm@10.1.0",
+  "devDependencies": {
+    "turbo": "^2.4.4"
+  }
+}
