@@ -2,7 +2,7 @@
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   devtools: { enabled: true },
-  modules: ['@auth0/auth0-nuxt'],
+  modules: [['@auth0/auth0-nuxt', { mountRoutes: true }]],
   imports: {
     autoImport: true,
   },
