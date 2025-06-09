@@ -43,6 +43,12 @@ export default defineNuxtModule({
       method: 'get',
     });
 
+    addServerHandler({
+      handler: resolver.resolve('./runtime/server/api/auth/backchannel-logout.post'),
+      route: '/auth/backchannel-logout',
+      method: 'post',
+    });
+
     addImportsDir(resolver.resolve('./runtime/composables'));
   },
 });
