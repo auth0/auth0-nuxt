@@ -7,7 +7,7 @@
   "type": "module",
   "scripts": {
     "build": "nuxt-module-build build --stub",
-    "dev:prepare": "nuxt-module-build build --stub && nuxt-module-build prepare",
+    "postbuild": "nuxt-module-build prepare",
     "build:watch": "tsup --watch",
     "clean": "rm -rf ./dist",
     "lint": "eslint \"./**/*.ts*\"",
