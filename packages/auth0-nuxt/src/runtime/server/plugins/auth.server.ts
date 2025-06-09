@@ -10,9 +10,17 @@ declare module 'h3' {
   }
 }
 
+export interface Auth0ClientOptions {
+  domain: string;
+  clientId: string;
+  clientSecret: string;
+  appBaseUrl: string;
+  sessionSecret: string;
+}
+
 export default defineNitroPlugin((nitroApp) => {
   const config = useRuntimeConfig();
-  const options: any = config.auth0;
+  const options = config.auth0 as Auth0ClientOptions;
 
   if (!options.domain) throw new Error('Auth0 configuration error: Domain is required');
   if (!options.clientId) throw new Error('Auth0 configuration error: Client ID is required');

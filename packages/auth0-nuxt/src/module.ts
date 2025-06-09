@@ -9,7 +9,7 @@ export default defineNuxtModule({
     name: 'auth0-nuxt',
     configKey: 'auth0',
   },
-  async setup(_options, nuxt) {
+  async setup() {
     const resolver = createResolver(import.meta.url);
 
     addServerPlugin(resolver.resolve('./runtime/server/plugins/auth.server'));
