@@ -21,6 +21,200 @@ npm i @auth0/auth0-nuxt
 
 This library requires Node.js 20 LTS and newer LTS versions.
 
+### 2. Register the Auth0 Nuxt Module
+
+The Auth0 Nuxt module is registered in the `nuxt.config.js` file, together with the runtime configuration. 
+
+```js
+{
+  modules: ['@auth0/auth0-nuxt'],
+  runtimeConfig: {
+    auth0: {
+      domain: '<AUTH0_DOMAIN>', // is overridden by NUXT_AUTH0_DOMAIN environment variable
+      clientId: '<AUTH0_CLIENT_ID>', // is overridden by NUXT_AUTH0_CLIENT_ID environment variable
+      clientSecret: '<AUTH0_CLIENT_SECRET>', // is overridden by NUXT_AUTH0_CLIENT_SECRET environment variable
+      sessionSecret: '<SESSION_SECRET>', // is overridden by NUXT_AUTH0_SESSION_SECRET environment variable
+      appBaseUrl: '<APP_BASE_URL>', // is overridden by NUXT_AUTH0_APP_BASE_URL environment variable
+    },
+  },
+}
+```
+
+The `AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, and `AUTH0_CLIENT_SECRET` can be obtained from the Auth0 Dashboard once you've created an application. This application must be a Regular Web Application.
+
+The `SESSION_SECRET` is the key used to encrypt the session cookie. You can generate a secret using openssl:
+
+```bash
+openssl rand -hex 64
+```
+
+The `APP_BASE_URL` is the URL that your application is running on. When developing locally, this is most commonly http://localhost:3000.
+
+
+> [!IMPORTANT]  
+> You will need to register the following URLs in your Auth0 Application via the [Auth0 Dashboard](https://manage.auth0.com):
+>
+> - Add `http://localhost:3000/auth/callback` to the list of **Allowed Callback URLs**
+> - Add `http://localhost:3000` to the list of **Allowed Logout URLs**
+
+#### Routes
+
+The SDK for Nuxt Web Applications mounts 4 main routes:
+
+1. `/auth/login`: the login route that the user will be redirected to to initiate an authentication transaction. Supports adding a `returnTo` querystring parameter to return to a specific URL after login.
+2. `/auth/logout`: the logout route that must be added to your Auth0 application's Allowed Logout URLs
+3. `/auth/callback`: the callback route that must be added to your Auth0 application's Allowed Callback URLs
+4. `/auth/backchannel-logout`: the route that will receive a `logout_token` when a configured [Back-Channel Logout](https://auth0.com/docs/authenticate/login/logout/back-channel-logout) initiator occurs
+
+
+To disable this behavior, you can set the `mountRoutes` option to `false` when registering the module (it's true by default):
+
+```ts
+modules: [['@auth0/auth0-nuxt', { mountRoutes: false }]]
+```
+
+### 3. Adding Login and Logout
+
+When using the built-in mounted routes, the user can be redirected to `/auth/login` to initiate the login flow and `/auth/logout` to log out.
+
+```html
+<a href="/auth/logout">Log out</a>
+<a href="/auth/login">Log in</a
+>
+```
+
+When not using the built-in routes, you want to call the SDK's `startInteractiveLogin()`, `completeInteractiveLogin()` and `logout()` methods through the `event.context.auth0Client` object, which is available in the server-side context of your Nuxt application.:
+
+```ts
+// server/routes/auth/login.js
+export default defineEventHandler(async (event) => {
+  const auth0Client = event.context.auth0Client;
+  const authorizationUrl = await auth0Client.startInteractiveLogin(
+    {
+      authorizationParams: {
+        // Custom URL to redirect back to after login to handle the callback.
+        // Make sure to configure the URL in the Auth0 Dashboard as an Allowed Callback URL.
+        redirect_uri: 'http://localhost:3000/auth/callback',
+      }
+    },
+    { event }
+  );
+
+  sendRedirect(event, authorizationUrl.href);
+});
+
+// server/routes/auth/callback.js
+export default defineEventHandler(async (event) => {
+  const auth0Client = event.context.auth0Client;
+  const auth0ClientOptions = event.context.auth0ClientOptions;
+
+  await auth0Client.completeInteractiveLogin(
+    new URL(event.node.req.url as string, auth0ClientOptions.appBaseUrl),
+    { event }
+  );
+
+  sendRedirect(event, 'https://localhost:3000');
+});
+
+// server/routes/auth/logout.js
+export default defineEventHandler(async (event) => {
+ const auth0Client = event.context.auth0Client;
+ const auth0ClientOptions = event.context.auth0ClientOptions;
+
+  const returnTo = auth0ClientOptions.appBaseUrl;
+  const logoutUrl = await auth0Client.logout(
+    { returnTo: returnTo.toString() },
+    { event }
+  );
+
+  sendRedirect(event, logoutUrl.href);
+});
+```
+
+With those in place, you will be able to call `auth/login` and `auth/logout` to log the user in and out of your application.
+
+
+### 4. Protecting Routes
+
+#### 4.1 Route Middlware
+
+In order to protect a Nuxt route, you can use the SDK's `useSession()` composable method in a custom route middleware. This will check if there is a session and redirect them to the login page if not:
+
+```ts
+// middleware/auth.ts
+import { useSession } from '@auth0/auth0-nuxt';
+
+export default defineNuxtRouteMiddleware((to, from) => {
+  const session = useSession();
+
+  if (!session.value) {
+    return navigateTo(`/auth/login?returnTo=${to.path}`);
+  }
+});
+```
+
+> [!INFORMATION]  
+> You can replace the check above with any check you want, such as checking for a specific user claim. The `useSession()` composable will return the session object if the user is authenticated.
+
+With that middleware in place, you can protect routes by adding it to the `middleware` property of the corresponding Nuxt route:
+
+```html
+<script setup>
+definePageMeta({
+  middleware: [ 'auth' ],
+});
+</script>
+```
+
+#### 4.2 Server Middleware
+Additionally, you can also use a server middleware to protect server-side rendered routes. This middleware will check if the user is authenticated and redirect them to the login page if they are not:
+
+```ts
+// server/middleware/auth.ts
+export default defineEventHandler(async (event) => {
+  const url = getRequestURL(event);
+
+  if (url.pathname === '/private') {
+    // TODO: See if there are alternative / better ways to access auth0Client
+    const auth0Client = event.context.auth0Client;
+    const session = await auth0Client.getSession({ event });
+    if (!session) {
+      return sendRedirect(event, `/auth/login?returnTo=${url.pathname}`);
+    }
+  }
+});
+```
+
+> [!IMPORTANT]  
+> The above examples are both to protect routes by the means of a session, and not API routes using a bearer token. 
+
+
+#### Requesting an Access Token to call an API
+
+If you need to call an API on behalf of the user, you want to specify the `audience` parameter when registering the plugin. This will make the SDK request an access token for the specified audience when the user logs in.
+
+```ts
+runtimeConfig: {
+  auth0: {
+    domain: '<AUTH0_DOMAIN>', // is overridden by NUXT_AUTH0_DOMAIN environment variable
+    clientId: '<AUTH0_CLIENT_ID>', // is overridden by NUXT_AUTH0_CLIENT_ID environment variable
+    clientSecret: '<AUTH0_CLIENT_SECRET>', // is overridden by NUXT_AUTH0_CLIENT_SECRET environment variable
+    sessionSecret: '<SESSION_SECRET>', // is overridden by NUXT_AUTH0_SESSION_SECRET environment variable
+    appBaseUrl: '<APP_BASE_URL>', // is overridden by NUXT_AUTH0_APP_BASE_URL environment variable
+    audience: '<AUTH0_AUDIENCE>', // is overridden by NUXT_AUTH0_AUDIENCE environment variable
+  },
+}
+```
+The `AUTH0_AUDIENCE` is the identifier of the API you want to call. You can find this in the API section of the Auth0 dashboard.
+
+Retrieving the token can be achieved by using `getAccessToken`:
+
+```ts
+const auth0Client = event.context.auth0Client;
+const accessTokenResult = await auth0Client.getAccessToken({ event });
+console.log(accessTokenResult.accessToken);
+```
+
 
 ## Feedback
 
