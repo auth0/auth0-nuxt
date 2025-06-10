@@ -79,7 +79,7 @@ export default defineNuxtRouteMiddleware((to, from) => {
 });
 ```
 
-> [!INFORMATION]  
+> [!NOTE]  
 > You can replace the check above with any check you want, such as checking for a specific user claim. The `useSession()` composable will return the session object if the user is authenticated.
 
 With that middleware in place, you can protect routes by adding it to the `middleware` property of the corresponding Nuxt route:
