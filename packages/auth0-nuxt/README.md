@@ -189,7 +189,7 @@ export default defineEventHandler(async (event) => {
 > The above examples are both to protect routes by the means of a session, and not API routes using a bearer token. 
 
 
-#### Requesting an Access Token to call an API
+### 5. Requesting an Access Token to call an API
 
 If you need to call an API on behalf of the user, you want to specify the `audience` parameter when registering the plugin. This will make the SDK request an access token for the specified audience when the user logs in.
 
