@@ -16,6 +16,7 @@ export interface Auth0ClientOptions {
   clientSecret: string;
   appBaseUrl: string;
   sessionSecret: string;
+  audience?: string;
 }
 
 export default defineNitroPlugin((nitroApp) => {
@@ -36,6 +37,7 @@ export default defineNitroPlugin((nitroApp) => {
     clientId: options.clientId,
     clientSecret: options.clientSecret,
     authorizationParams: {
+      audience: options.audience,
       redirect_uri: redirectUri.toString(),
     },
     transactionStore: new CookieTransactionStore(),
