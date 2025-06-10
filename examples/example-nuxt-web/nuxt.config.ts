@@ -13,6 +13,7 @@ export default defineNuxtConfig({
       clientSecret: '', // is overridden by NUXT_AUTH0_CLIENT_SECRET environment variable
       sessionSecret: '', // is overridden by NUXT_AUTH0_SESSION_SECRET environment variable
       appBaseUrl: 'http://localhost:3000', // is overridden by NUXT_AUTH0_APP_BASE_URL environment variable
+      audience: '', // is overridden by NUXT_AUTH0_AUDIENCE environment variable
     },
   },
   app: {

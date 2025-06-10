@@ -29,6 +29,14 @@ const { user } = session ?? {};
             >Private Page</a
           >
         </li>
+        <li class="nav-item">
+          <a
+            href="/private-route-middleware"
+            class="nav-link link-body-emphasis px-2 active"
+            aria-current="page"
+            >Private Page (Route Middleware)</a
+          >
+        </li>
       </ul>
       <ul class="nav">
         <li class="nav-item">
