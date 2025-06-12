@@ -1,8 +1,11 @@
 import { useRuntimeConfig } from '#imports';
+import { setCookie, deleteCookie, getCookie, parseCookies } from 'h3';
 import { ServerClient } from '@auth0/auth0-server-js';
 import { defineNitroPlugin } from 'nitropack/dist/runtime/plugin';
 import { CookieTransactionStore } from '../../../store/cookie-transaction-store';
 import { StatelessStateStore } from '../../../store/stateless-state-store';
+import type { CookieHandler, CookieSerializeOptions } from '~/src/store/cookie-handler';
+import type { StoreOptions } from '~/src/types';
 
 declare module 'h3' {
   interface H3EventContext {
@@ -17,6 +20,21 @@ export interface Auth0ClientOptions {
   appBaseUrl: string;
   sessionSecret: string;
   audience?: string;
+}
+
+export class NuxtCookieHandler implements CookieHandler {
+  setCookie(storeOptions: StoreOptions, name: string, value: string, options?: CookieSerializeOptions): void {
+    return setCookie(storeOptions.event, name, value, options);
+  }
+  getCookie(storeOptions: StoreOptions, name: string): string | undefined {
+    return getCookie(storeOptions.event, name);
+  }
+  getCookies(storeOptions: StoreOptions): Record<string, string> {
+    return parseCookies(storeOptions.event);
+  }
+  deleteCookie(storeOptions: StoreOptions, name: string): void {
+    return deleteCookie(storeOptions.event, name);
+  }
 }
 
 export default defineNitroPlugin((nitroApp) => {
@@ -40,16 +58,19 @@ export default defineNitroPlugin((nitroApp) => {
       audience: options.audience,
       redirect_uri: redirectUri.toString(),
     },
-    transactionStore: new CookieTransactionStore(),
-    stateStore: new StatelessStateStore({
-      secret: options.sessionSecret,
-    }),
+    transactionStore: new CookieTransactionStore(new NuxtCookieHandler()),
+    stateStore: new StatelessStateStore(
+      {
+        secret: options.sessionSecret,
+      },
+      new NuxtCookieHandler()
+    ),
   });
 
   nitroApp.hooks.hook('request', async (event) => {
     event.context.auth0Client = auth0Client;
     event.context.auth0ClientOptions = {
-        appBaseUrl: options.appBaseUrl,
+      appBaseUrl: options.appBaseUrl,
     };
   });
 });

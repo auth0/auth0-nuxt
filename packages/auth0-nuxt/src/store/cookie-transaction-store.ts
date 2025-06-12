@@ -1,9 +1,14 @@
 import type { TransactionData, TransactionStore } from '@auth0/auth0-server-js';
 import type { StoreOptions } from '../types.js';
-import { setCookie, deleteCookie, getCookie } from 'h3';
-import type { CookieSerializeOptions } from 'cookie-es';
+import type { CookieHandler, CookieSerializeOptions } from './cookie-handler.js';
 
 export class CookieTransactionStore implements TransactionStore<StoreOptions> {
+  readonly #cookieHandler: CookieHandler;
+
+  constructor(cookieHandler: CookieHandler) {
+    this.#cookieHandler = cookieHandler;
+  }
+
   async set(
     identifier: string,
     transactionData: TransactionData,
@@ -18,7 +23,7 @@ export class CookieTransactionStore implements TransactionStore<StoreOptions> {
     const maxAge = 60 * 60;
     const cookieOpts: CookieSerializeOptions = { httpOnly: true, sameSite: 'lax', path: '/', secure: true, maxAge };
 
-    setCookie(options.event, identifier, JSON.stringify(transactionData), cookieOpts);
+    this.#cookieHandler.setCookie(options, identifier, JSON.stringify(transactionData), cookieOpts);
   }
 
   async get(identifier: string, options?: StoreOptions): Promise<TransactionData | undefined> {
@@ -27,7 +32,7 @@ export class CookieTransactionStore implements TransactionStore<StoreOptions> {
       throw new Error('StoreOptions not provided');
     }
 
-    const cookieValue = getCookie(options.event, identifier);
+    const cookieValue = this.#cookieHandler.getCookie(options, identifier);
 
     if (cookieValue) {
       return JSON.parse(cookieValue) as TransactionData;
@@ -40,6 +45,6 @@ export class CookieTransactionStore implements TransactionStore<StoreOptions> {
       throw new Error('StoreOptions not provided');
     }
 
-    deleteCookie(options.event, identifier);
+    this.#cookieHandler.deleteCookie(options, identifier);
   }
 }

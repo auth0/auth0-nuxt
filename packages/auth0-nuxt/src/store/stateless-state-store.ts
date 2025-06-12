@@ -1,16 +1,15 @@
-import type { CookieSerializeOptions } from 'cookie-es';
-import type {
-  EncryptedStoreOptions,
-  StateData,
-} from '@auth0/auth0-server-js';
+import type { EncryptedStoreOptions, StateData } from '@auth0/auth0-server-js';
 import type { StoreOptions } from '../types.js';
 import { AbstractSessionStore } from './abstract-session-store.js';
-
-import { setCookie, deleteCookie, getCookie, parseCookies } from 'h3';
+import type { CookieHandler, CookieSerializeOptions } from './cookie-handler.js';
 
 export class StatelessStateStore extends AbstractSessionStore {
-  constructor(options: EncryptedStoreOptions) {
+  readonly #cookieHandler: CookieHandler;
+
+  constructor(options: EncryptedStoreOptions, cookieHandler: CookieHandler) {
     super(options);
+
+    this.#cookieHandler = cookieHandler;
   }
 
   async set(
@@ -33,11 +32,7 @@ export class StatelessStateStore extends AbstractSessionStore {
       maxAge,
     };
     const expiration = Math.floor(Date.now() / 1000 + maxAge);
-    const encryptedStateData = await this.encrypt(
-      identifier,
-      stateData,
-      expiration
-    );
+    const encryptedStateData = await this.encrypt(identifier, stateData, expiration);
 
     const chunkSize = 3072;
     const chunkCount = Math.ceil(encryptedStateData.length / chunkSize);
@@ -47,22 +42,17 @@ export class StatelessStateStore extends AbstractSessionStore {
     }));
 
     chunks.forEach((chunk) => {
-      setCookie(options.event, chunk.name, chunk.value, cookieOpts);
+      this.#cookieHandler.setCookie(options, chunk.name, chunk.value, cookieOpts);
     });
 
     const existingCookieKeys = this.getCookieKeys(identifier, options);
-    const cookieKeysToRemove = existingCookieKeys.filter(
-      (key) => !chunks.some((chunk) => chunk.name === key)
-    );
+    const cookieKeysToRemove = existingCookieKeys.filter((key) => !chunks.some((chunk) => chunk.name === key));
     cookieKeysToRemove.forEach((key) => {
-      deleteCookie(options.event, key);
+      this.#cookieHandler.deleteCookie(options, key);
     });
   }
 
-  async get(
-    identifier: string,
-    options?: StoreOptions | undefined
-  ): Promise<StateData | undefined> {
+  async get(identifier: string, options?: StoreOptions | undefined): Promise<StateData | undefined> {
     // We can not handle cookies in Fastify when the `StoreOptions` are not provided.
     if (!options) {
       throw new Error('StoreOptions not provided');
@@ -72,21 +62,18 @@ export class StatelessStateStore extends AbstractSessionStore {
     const encryptedStateData = cookieKeys
       .map((key) => ({
         index: parseInt(key.split('.')[1], 10),
-        value: getCookie(options.event, key),
+        value: this.#cookieHandler.getCookie(options, key),
       }))
       .sort((a, b) => a.index - b.index)
       .map((item) => item.value)
       .join('');
 
     if (encryptedStateData) {
-      return (await this.decrypt(identifier, encryptedStateData));
+      return await this.decrypt(identifier, encryptedStateData);
     }
   }
 
-  async delete(
-    identifier: string,
-    options?: StoreOptions | undefined
-  ): Promise<void> {
+  async delete(identifier: string, options?: StoreOptions | undefined): Promise<void> {
     // We can not handle cookies in Fastify when the `StoreOptions` are not provided.
     if (!options) {
       throw new Error('StoreOptions not provided');
@@ -94,7 +81,7 @@ export class StatelessStateStore extends AbstractSessionStore {
 
     const cookieKeys = this.getCookieKeys(identifier, options);
     for (const key of cookieKeys) {
-      deleteCookie(options.event, key);
+      this.#cookieHandler.deleteCookie(options, key);
     }
   }
 
@@ -105,8 +92,6 @@ export class StatelessStateStore extends AbstractSessionStore {
   }
 
   private getCookieKeys(identifier: string, options: StoreOptions): string[] {
-    return Object.keys(parseCookies(options.event)).filter((key) =>
-      key.startsWith(identifier)
-    );
+    return Object.keys(this.#cookieHandler.getCookies(options)).filter((key) => key.startsWith(identifier));
   }
 }
