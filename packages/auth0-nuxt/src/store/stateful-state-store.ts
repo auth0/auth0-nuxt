@@ -1,8 +1,7 @@
-import type { CookieSerializeOptions } from 'cookie-es';
 import type { EncryptedStoreOptions, LogoutTokenClaims, StateData } from '@auth0/auth0-server-js';
 import type { SessionConfiguration, SessionCookieOptions, SessionStore, StoreOptions } from '../types.js';
 import { AbstractSessionStore } from './abstract-session-store.js';
-import { setCookie, deleteCookie, getCookie } from 'h3';
+import type { CookieHandler, CookieSerializeOptions } from './cookie-handler.js';
 
 export interface StatefulStateStoreOptions extends EncryptedStoreOptions {
   store: SessionStore;
@@ -19,12 +18,14 @@ const generateId = () => {
 export class StatefulStateStore extends AbstractSessionStore {
   readonly #store: SessionStore;
   readonly #cookieOptions: SessionCookieOptions | undefined;
+    readonly #cookieHandler: CookieHandler;
 
-  constructor(options: StatefulStateStoreOptions & SessionConfiguration) {
+  constructor(options: StatefulStateStoreOptions & SessionConfiguration, cookieHandler: CookieHandler) {
     super(options);
 
     this.#store = options.store;
     this.#cookieOptions = options.cookie;
+    this.#cookieHandler = cookieHandler;
   }
 
   async set(
@@ -68,7 +69,7 @@ export class StatefulStateStore extends AbstractSessionStore {
 
     await this.#store.set(sessionId, stateData);
 
-    setCookie(options.event, identifier, encryptedStateData, cookieOpts);
+    this.#cookieHandler.setCookie(options, identifier, encryptedStateData, cookieOpts);
   }
 
   async get(identifier: string, options?: StoreOptions | undefined): Promise<StateData | undefined> {
@@ -84,7 +85,7 @@ export class StatefulStateStore extends AbstractSessionStore {
 
       // If we have a session cookie, but no `stateData`, we should remove the cookie.
       if (!stateData) {
-        deleteCookie(options.event, identifier);
+        this.#cookieHandler.deleteCookie(options, identifier);
       }
 
       return stateData;
@@ -103,11 +104,11 @@ export class StatefulStateStore extends AbstractSessionStore {
       await this.#store.delete(sessionId);
     }
 
-    deleteCookie(options.event, identifier);
+    this.#cookieHandler.deleteCookie(options, identifier);
   }
 
   private async getSessionId(identifier: string, options: StoreOptions) {
-    const cookieValue = getCookie(options.event, identifier);
+    const cookieValue = this.#cookieHandler.getCookie(options, identifier);
     if (cookieValue) {
       const sessionCookie = await this.decrypt<{ id: string }>(identifier, cookieValue);
       return sessionCookie.id;
