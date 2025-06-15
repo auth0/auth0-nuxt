@@ -5,6 +5,7 @@ import {
   addServerPlugin,
   addRouteMiddleware,
   addImportsDir,
+  addServerImportsDir,
 } from '@nuxt/kit';
 
 export default defineNuxtModule({
@@ -52,5 +53,6 @@ export default defineNuxtModule({
     }
 
     addImportsDir(resolver.resolve('./runtime/composables'));
+    addServerImportsDir(resolver.resolve('./runtime/server/composables'))
   },
 });

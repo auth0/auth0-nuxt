@@ -93,7 +93,7 @@ definePageMeta({
 ```
 
 #### Server Middleware
-Additionally, you can also use a server middleware to protect server-side rendered routes. This middleware will check if the user is authenticated and redirect them to the login page if they are not:
+Additionally, you can also use a server middleware to protect server-side rendered routes by using the `useAuth0` server-side composable. This middleware will check if the user is authenticated and redirect them to the login page if they are not:
 
 ```ts
 // server/middleware/auth.ts
@@ -101,9 +101,8 @@ export default defineEventHandler(async (event) => {
   const url = getRequestURL(event);
 
   if (url.pathname === '/private') {
-    // TODO: See if there are alternative / better ways to access auth0Client
-    const auth0Client = event.context.auth0Client;
-    const session = await auth0Client.getSession({ event });
+    const auth0Client = useAuth0(event);
+    const session = await auth0Client.getSession();
     if (!session) {
       return sendRedirect(event, `/auth/login?returnTo=${url.pathname}`);
     }
@@ -133,10 +132,10 @@ runtimeConfig: {
 ```
 The `AUTH0_AUDIENCE` is the identifier of the API you want to call. You can find this in the API section of the Auth0 dashboard.
 
-Retrieving the token can be achieved by using `getAccessToken`:
+Retrieving the token can be achieved by using `getAccessToken` using the server-side composable `useAuth0`:
 
 ```ts
-const auth0Client = event.context.auth0Client;
-const accessTokenResult = await auth0Client.getAccessToken({ event });
+const auth0Client = useAuth0(event);
+const accessTokenResult = await auth0Client.getAccessToken();
 console.log(accessTokenResult.accessToken);
 ```

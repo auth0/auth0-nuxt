@@ -83,12 +83,12 @@ When using the built-in mounted routes, the user can be redirected to `/auth/log
 >
 ```
 
-When not using the built-in routes, you want to call the SDK's `startInteractiveLogin()`, `completeInteractiveLogin()` and `logout()` methods through the `event.context.auth0Client` object, which is available in the server-side context of your Nuxt application.:
+When not using the built-in routes, you want to call the SDK's `startInteractiveLogin()`, `completeInteractiveLogin()` and `logout()` methods through the `useAuth0()` composable, which is available in the server-side context of your Nuxt application.:
 
 ```ts
 // server/routes/auth/login.js
 export default defineEventHandler(async (event) => {
-  const auth0Client = event.context.auth0Client;
+  const auth0Client = useAuth0(event);
   const authorizationUrl = await auth0Client.startInteractiveLogin(
     {
       authorizationParams: {
@@ -96,8 +96,7 @@ export default defineEventHandler(async (event) => {
         // Make sure to configure the URL in the Auth0 Dashboard as an Allowed Callback URL.
         redirect_uri: 'http://localhost:3000/auth/callback',
       }
-    },
-    { event }
+    }
   );
 
   sendRedirect(event, authorizationUrl.href);
@@ -105,12 +104,9 @@ export default defineEventHandler(async (event) => {
 
 // server/routes/auth/callback.js
 export default defineEventHandler(async (event) => {
-  const auth0Client = event.context.auth0Client;
-  const auth0ClientOptions = event.context.auth0ClientOptions;
-
+  const auth0Client = useAuth0(event);
   await auth0Client.completeInteractiveLogin(
-    new URL(event.node.req.url as string, auth0ClientOptions.appBaseUrl),
-    { event }
+    new URL(event.node.req.url as string, 'http://localhost:3000')
   );
 
   sendRedirect(event, 'https://localhost:3000');
@@ -118,13 +114,10 @@ export default defineEventHandler(async (event) => {
 
 // server/routes/auth/logout.js
 export default defineEventHandler(async (event) => {
- const auth0Client = event.context.auth0Client;
- const auth0ClientOptions = event.context.auth0ClientOptions;
-
-  const returnTo = auth0ClientOptions.appBaseUrl;
+  const auth0Client = useAuth0(event);
+  const returnTo = 'https://localhost:3000';
   const logoutUrl = await auth0Client.logout(
-    { returnTo: returnTo.toString() },
-    { event }
+    { returnTo: returnTo.toString() }
   );
 
   sendRedirect(event, logoutUrl.href);
@@ -167,7 +160,7 @@ definePageMeta({
 ```
 
 #### 4.2 Server Middleware
-Additionally, you can also use a server middleware to protect server-side rendered routes. This middleware will check if the user is authenticated and redirect them to the login page if they are not:
+Additionally, you can also use a server middleware to protect server-side rendered routes by using the `useAuth0` server-side composable. This middleware will check if the user is authenticated and redirect them to the login page if they are not:
 
 ```ts
 // server/middleware/auth.ts
@@ -175,9 +168,8 @@ export default defineEventHandler(async (event) => {
   const url = getRequestURL(event);
 
   if (url.pathname === '/private') {
-    // TODO: See if there are alternative / better ways to access auth0Client
-    const auth0Client = event.context.auth0Client;
-    const session = await auth0Client.getSession({ event });
+    const auth0Client = useAuth0(event);
+    const session = await auth0Client.getSession();
     if (!session) {
       return sendRedirect(event, `/auth/login?returnTo=${url.pathname}`);
     }
@@ -207,11 +199,11 @@ runtimeConfig: {
 ```
 The `AUTH0_AUDIENCE` is the identifier of the API you want to call. You can find this in the API section of the Auth0 dashboard.
 
-Retrieving the token can be achieved by using `getAccessToken`:
+Retrieving the token can be achieved by using `getAccessToken` using the server-side composable `useAuth0`:
 
 ```ts
-const auth0Client = event.context.auth0Client;
-const accessTokenResult = await auth0Client.getAccessToken({ event });
+const auth0Client = useAuth0(event);
+const accessTokenResult = await auth0Client.getAccessToken();
 console.log(accessTokenResult.accessToken);
 ```
 
