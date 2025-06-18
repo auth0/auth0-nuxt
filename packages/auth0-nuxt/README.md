@@ -79,8 +79,7 @@ When using the built-in mounted routes, the user can be redirected to `/auth/log
 
 ```html
 <a href="/auth/logout">Log out</a>
-<a href="/auth/login">Log in</a
->
+<a href="/auth/login">Log in</a>
 ```
 
 When not using the built-in routes, you want to call the SDK's `startInteractiveLogin()`, `completeInteractiveLogin()` and `logout()` methods through the `useAuth0()` composable, which is available in the server-side context of your Nuxt application.:
