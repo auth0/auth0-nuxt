@@ -2,7 +2,16 @@
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   devtools: { enabled: true },
-  modules: [['@auth0/auth0-nuxt', { mountRoutes: true }]],
+  modules: [
+    [
+      '@auth0/auth0-nuxt',
+      {
+        mountRoutes: true,
+        sessionStoreFactoryPath: '~/server/utils/session-store-factory.ts',
+      },
+    ],
+  ],
+
   imports: {
     autoImport: true,
   },
@@ -15,6 +24,15 @@ export default defineNuxtConfig({
       appBaseUrl: 'http://localhost:3000', // is overridden by NUXT_AUTH0_APP_BASE_URL environment variable
       audience: '', // is overridden by NUXT_AUTH0_AUDIENCE environment variable
     },
+  },
+  nitro: {
+    storage: {
+      redis: {
+        driver: 'redis',
+        port: 6379,
+        host: "127.0.0.1",
+      }
+    }
   },
   app: {
     head: {

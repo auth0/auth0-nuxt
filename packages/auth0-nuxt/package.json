@@ -29,6 +29,10 @@
       ]
     }
   },
+  "typeRoots": [
+    "./node_modules/@types",
+    "./src/types"
+  ],
   "devDependencies": {
     "@eslint/js": "^9.20.0",
     "@nuxt/devtools": "^2.4.1",

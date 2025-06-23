@@ -6,12 +6,15 @@ import {
   addRouteMiddleware,
   addImportsDir,
   addServerImportsDir,
+  resolvePath,
 } from '@nuxt/kit';
 
-export type { SessionConfiguration, SessionCookieOptions, SessionStore } from '@auth0/auth0-server-js';
+export * from './types';
+export type { SessionConfiguration, SessionCookieOptions, StateData } from '@auth0/auth0-server-js';
 
 export interface ModuleOptions {
   mountRoutes?: boolean;
+  sessionStoreFactoryPath?: string;
 }
 
 export default defineNuxtModule<ModuleOptions>({
@@ -19,8 +22,16 @@ export default defineNuxtModule<ModuleOptions>({
     name: 'auth0-nuxt',
     configKey: 'auth0',
   },
-  async setup(options) {
+  async setup(options, nuxt) {
     const resolver = createResolver(import.meta.url);
+
+    if (options.sessionStoreFactoryPath) {
+      nuxt.options.nitro.alias = nuxt.options.nitro.alias || {};
+      nuxt.options.nitro.alias['#auth0-session-store'] = await resolvePath(options.sessionStoreFactoryPath);
+    } else {
+      nuxt.options.nitro.alias = nuxt.options.nitro.alias || {};
+      nuxt.options.nitro.alias['#auth0-session-store'] = resolver.resolve('./runtime/server/utils/load-default-session-store');
+    }
 
     addServerPlugin(resolver.resolve('./runtime/server/plugins/auth.server'));
 

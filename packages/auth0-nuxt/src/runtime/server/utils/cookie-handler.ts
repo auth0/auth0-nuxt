@@ -1,9 +1,7 @@
 import type { CookieHandler, CookieSerializeOptions } from '@auth0/auth0-server-js';
-import { setCookie, deleteCookie, getCookie, parseCookies, H3Event } from 'h3';
+import { setCookie, deleteCookie, getCookie, parseCookies } from 'h3';
+import type { StoreOptions } from '~/src/types';
 
-export interface StoreOptions {
-  event: H3Event
-}
 /**
  * A Nuxt-specific implementation of the CookieHandler interface.
  * This class provides methods to set, get, and delete cookies in a Nuxt application.
