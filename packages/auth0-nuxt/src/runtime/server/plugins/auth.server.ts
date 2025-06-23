@@ -1,6 +1,7 @@
 import { useRuntimeConfig } from '#imports';
-import { ServerClient } from '@auth0/auth0-server-js';
+import { ServerClient, type SessionConfiguration, type SessionStore } from '@auth0/auth0-server-js';
 import { defineNitroPlugin } from 'nitropack/dist/runtime/plugin';
+import type { StoreOptions } from '~/src/types';
 
 declare module 'h3' {
   interface H3EventContext {
@@ -15,9 +16,19 @@ export interface Auth0ClientOptions {
   appBaseUrl: string;
   sessionSecret: string;
   audience?: string;
+  sessionConfiguration?: SessionConfiguration;
 }
 
-export default defineNitroPlugin((nitroApp) => {
+async function tryLoadSessionStore(): Promise<SessionStore<StoreOptions> | undefined> {
+  try {
+    const factoryModule = await import('#auth0-session-store');
+    return factoryModule.default();
+  } catch {
+    return undefined;
+  }
+}
+
+export default defineNitroPlugin(async (nitroApp) => {
   const config = useRuntimeConfig();
   const options = config.auth0 as Auth0ClientOptions;
 
@@ -27,7 +38,10 @@ export default defineNitroPlugin((nitroApp) => {
   if (!options.appBaseUrl) throw new Error('Auth0 configuration error: App Base URL is required');
   if (!options.sessionSecret) throw new Error('Auth0 configuration error: Session Secret is required');
 
+  const sessionStoreInstance = await tryLoadSessionStore();
+
   nitroApp.hooks.hook('request', async (event) => {
     event.context.auth0ClientOptions = options;
+    event.context.auth0SessionStore = sessionStoreInstance;
   });
 });

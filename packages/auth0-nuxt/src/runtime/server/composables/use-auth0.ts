@@ -2,6 +2,7 @@ import type { H3Event, SessionData } from 'h3';
 import {
   CookieTransactionStore,
   ServerClient,
+  StatefulStateStore,
   StatelessStateStore,
   type AccessTokenForConnectionOptions,
   type ConnectionTokenSet,
@@ -15,6 +16,7 @@ import {
 import type { AuthorizationDetails } from '@auth0/auth0-auth-js';
 import { NuxtCookieHandler } from '../utils/cookie-handler';
 import type { Auth0ClientOptions } from '../plugins/auth.server';
+import type { SessionStore } from '~/src/types';
 
 export interface Auth0Client {
   startInteractiveLogin: (options?: StartInteractiveLoginOptions) => Promise<URL>;
@@ -67,7 +69,7 @@ function toNuxtInstance(serverClient: ServerClient<{ event: H3Event }>, event: H
  * @param options The options to configure the Auth0 client instance.
  * @returns A new instance of the Auth0 server client configured for server-side use in a Nuxt application.
  */
-function createServerClientInstance(options: Auth0ClientOptions): ServerClient {
+function createServerClientInstance(options: Auth0ClientOptions, sessionStore?: SessionStore): ServerClient {
   const callbackPath = '/auth/callback';
   const redirectUri = new URL(callbackPath, options.appBaseUrl);
 
@@ -85,12 +87,22 @@ function createServerClientInstance(options: Auth0ClientOptions): ServerClient {
       },
       new NuxtCookieHandler()
     ),
-    stateStore: new StatelessStateStore(
-      {
-        secret: options.sessionSecret,
-      },
-      new NuxtCookieHandler()
-    ),
+    stateStore: sessionStore
+      ? new StatefulStateStore(
+          {
+            ...options.sessionConfiguration,
+            secret: options.sessionSecret,
+            store: sessionStore,
+          },
+          new NuxtCookieHandler()
+        )
+      : new StatelessStateStore(
+          {
+            ...options.sessionConfiguration,
+            secret: options.sessionSecret,
+          },
+          new NuxtCookieHandler()
+        ),
   });
 }
 
@@ -108,7 +120,10 @@ export const useAuth0 = (event: H3Event) => {
   }
 
   // If the instance is already created, do not override it.
-  event.context.auth0Client ??= createServerClientInstance(event.context.auth0ClientOptions);
+  event.context.auth0Client ??= createServerClientInstance(
+    event.context.auth0ClientOptions,
+    event.context.auth0SessionStore
+  );
 
   // We need to recreate the nuxt instance every time, because the event context might change.
   instance = toNuxtInstance(event.context.auth0Client, event);

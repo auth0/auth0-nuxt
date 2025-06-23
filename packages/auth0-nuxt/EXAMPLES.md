@@ -60,7 +60,7 @@ NUXT_AUTH0_APP_BASE_URL=http://localhost:3000
 NUXT_AUTH0_SESSION_SECRET=<YOUR_LONG_RANDOM_SECRET>
 ```
 
-### Protecting Routes
+## Protecting Routes
 
 #### Route Middlware
 
@@ -114,7 +114,7 @@ export default defineEventHandler(async (event) => {
 > The above examples are both to protect routes by the means of a session, and not API routes using a bearer token. 
 
 
-### Requesting an Access Token to call an API
+## Requesting an Access Token to call an API
 
 If you need to call an API on behalf of the user, you want to specify the `audience` parameter when registering the runtime configuration for the auth0 module. This will make the SDK request an access token for the specified audience when the user logs in.
 
@@ -138,4 +138,59 @@ Retrieving the token can be achieved by using `getAccessToken` using the server-
 const auth0Client = useAuth0(event);
 const accessTokenResult = await auth0Client.getAccessToken();
 console.log(accessTokenResult.accessToken);
+```
+
+## Stateful Sessions
+
+By default, the SDK uses a stateless session, meaning that the session data is stored in the cookie. If you want to use a stateful session, and persist the session data to your persistence layer of choice, you can configure the SDK to use a session store by providing a `sessionStoreFactoryPath` in the module options.
+
+```ts
+{
+  modules: ['@auth0/auth0-nuxt'],
+  auth0: {
+    sessionStoreFactoryPath: '~/server/utils/session-store-factory.ts',
+  },
+}
+```
+
+Where `~/server/utils/session-store-factory.ts` is the path to your session store factory. The session store factory should `default export` a factory function that returns an instance implementing the `SessionStore` interface from the SDK.
+
+Here's an example of a session store factory that uses Redis as the persistence layer, integrated through [the storage layer integrated in nuxt](https://nitro.build/guide/storage):
+
+```ts
+import type { SessionStore, StateData, StoreOptions } from '@auth0/auth0-nuxt';
+import type { Storage } from "unstorage";
+
+export class MyRedisStore implements SessionStore {
+  readonly #store: Storage<StateData>;
+
+  constructor(store: Storage<StateData>) {
+    this.#store = store;
+  }
+  async delete(identifier: string): Promise<void> {
+    this.#store.removeItem(identifier);
+  }
+
+  async set(identifier: string, stateData: StateData): Promise<void> {
+    this.#store.setItem(identifier, stateData);
+  }
+
+  async get(identifier: string): Promise<StateData | undefined> {
+    const result = await this.#store.getItem<StateData>(identifier);
+
+    // As redis returns null if the key does not exist, we need to map it to undefined
+    return result ?? undefined;
+  }
+
+  async deleteByLogoutToken(claims: any, options?: StoreOptions): Promise<void> {
+    // Implement your logic to delete by logout token
+    // This is just a placeholder
+    console.log('Deleting by logout token:', claims);
+  }
+}
+
+export default function getSessionStoreInstance() {
+  const storage = useStorage<StateData>('redis');
+  return new MyRedisStore(storage);
+}
 ```
