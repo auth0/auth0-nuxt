@@ -1,4 +1,4 @@
-import type { H3Event } from 'h3';
+import type { H3Event, SessionData } from 'h3';
 import {
   CookieTransactionStore,
   ServerClient,
@@ -10,12 +10,13 @@ import {
   type LogoutOptions,
   type StartInteractiveLoginOptions,
   type TokenSet,
+  type UserClaims,
 } from '@auth0/auth0-server-js';
 import type { AuthorizationDetails } from '@auth0/auth0-auth-js';
 import { NuxtCookieHandler } from '../utils/cookie-handler';
 import type { Auth0ClientOptions } from '../plugins/auth.server';
 
-export interface Auth0Client<TAppState = any> {
+export interface Auth0Client {
   startInteractiveLogin: (options?: StartInteractiveLoginOptions) => Promise<URL>;
   completeInteractiveLogin: <TAppState = unknown>(
     url: URL
@@ -23,8 +24,8 @@ export interface Auth0Client<TAppState = any> {
     appState?: TAppState;
     authorizationDetails?: AuthorizationDetails[];
   }>;
-  getUser: () => Promise<any>;
-  getSession: () => Promise<any>;
+  getUser: () => Promise<UserClaims | undefined>;
+  getSession: () => Promise<SessionData | undefined>;
   getAccessToken: () => Promise<TokenSet>;
   getAccessTokenForConnection: (options: AccessTokenForConnectionOptions) => Promise<ConnectionTokenSet>;
   loginBackchannel: (options: LoginBackchannelOptions) => Promise<LoginBackchannelResult>;
