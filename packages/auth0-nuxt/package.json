@@ -45,7 +45,7 @@
     "vitest": "^3.0.5"
   },
   "dependencies": {
-    "@auth0/auth0-server-js": "^1.0.0",
+    "@auth0/auth0-server-js": "^1.0.3",
     "@nuxt/kit": "^3.17.4"
   },
   "files": [

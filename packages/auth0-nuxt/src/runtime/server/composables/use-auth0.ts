@@ -1,6 +1,8 @@
 import type { H3Event } from 'h3';
 import {
+  CookieTransactionStore,
   ServerClient,
+  StatelessStateStore,
   type AccessTokenForConnectionOptions,
   type ConnectionTokenSet,
   type LoginBackchannelOptions,
@@ -10,8 +12,6 @@ import {
   type TokenSet,
 } from '@auth0/auth0-server-js';
 import type { AuthorizationDetails } from '@auth0/auth0-auth-js';
-import { CookieTransactionStore } from '../../../store/cookie-transaction-store';
-import { StatelessStateStore } from '../../../store/stateless-state-store';
 import { NuxtCookieHandler } from '../utils/cookie-handler';
 import type { Auth0ClientOptions } from '../plugins/auth.server';
 
@@ -78,7 +78,12 @@ function createServerClientInstance(options: Auth0ClientOptions): ServerClient {
       audience: options.audience,
       redirect_uri: redirectUri.toString(),
     },
-    transactionStore: new CookieTransactionStore(new NuxtCookieHandler()),
+    transactionStore: new CookieTransactionStore(
+      {
+        secret: options.sessionSecret,
+      },
+      new NuxtCookieHandler()
+    ),
     stateStore: new StatelessStateStore(
       {
         secret: options.sessionSecret,
