@@ -8,7 +8,11 @@ import {
   addServerImportsDir,
 } from '@nuxt/kit';
 
-export default defineNuxtModule({
+export interface ModuleOptions {
+  mountRoutes?: boolean;
+}
+
+export default defineNuxtModule<ModuleOptions>({
   meta: {
     name: 'auth0-nuxt',
     configKey: 'auth0',
