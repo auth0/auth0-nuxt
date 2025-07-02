@@ -8,6 +8,8 @@ import {
   addServerImportsDir,
 } from '@nuxt/kit';
 
+export type { SessionConfiguration, SessionCookieOptions, SessionStore } from '@auth0/auth0-server-js';
+
 export interface ModuleOptions {
   mountRoutes?: boolean;
 }
@@ -57,6 +59,6 @@ export default defineNuxtModule<ModuleOptions>({
     }
 
     addImportsDir(resolver.resolve('./runtime/composables'));
-    addServerImportsDir(resolver.resolve('./runtime/server/composables'))
+    addServerImportsDir(resolver.resolve('./runtime/server/composables'));
   },
 });
