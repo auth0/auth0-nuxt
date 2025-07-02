@@ -1,3 +1,4 @@
+import { useAuth0 } from '../../composables/use-auth0';
 import { defineEventHandler, getQuery, sendRedirect } from 'h3';
 
 /**
@@ -53,7 +54,7 @@ export function toSafeRedirect(dangerousRedirect: string, safeBaseUrl: string): 
 }
 
 export default defineEventHandler(async (event) => {
-  const auth0Client = event.context.auth0Client;
+  const auth0Client = useAuth0(event);
   const auth0ClientOptions = event.context.auth0ClientOptions;
   const query = getQuery(event);
   const dangerousReturnTo = query.returnTo ?? auth0ClientOptions.appBaseUrl;
@@ -64,7 +65,6 @@ export default defineEventHandler(async (event) => {
     {
       appState: { returnTo: sanitizedReturnTo },
     },
-    { event }
   );
 
   sendRedirect(event, authorizationUrl.href);

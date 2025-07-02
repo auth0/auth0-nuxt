@@ -1,7 +1,8 @@
+import { useAuth0 } from '../../composables/use-auth0';
 import { defineEventHandler, readBody, createError } from 'h3';
 
 export default defineEventHandler(async (event) => {
-  const auth0Client = event.context.auth0Client;
+  const auth0Client = useAuth0(event);
   const body = await readBody(event);
   const logoutToken = body?.logout_token;
 
@@ -13,7 +14,7 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    await auth0Client.handleBackchannelLogout(logoutToken, { event });
+    await auth0Client.handleBackchannelLogout(logoutToken);
     return null;
   } catch (e) {
     throw createError({
