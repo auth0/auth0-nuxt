@@ -57,12 +57,6 @@ export default defineNuxtModule<ModuleOptions>({
       });
 
       addServerHandler({
-        handler: resolver.resolve('./runtime/server/api/auth/profile.get'),
-        route: '/auth/profile',
-        method: 'get',
-      });
-
-      addServerHandler({
         handler: resolver.resolve('./runtime/server/api/auth/backchannel-logout.post'),
         route: '/auth/backchannel-logout',
         method: 'post',
