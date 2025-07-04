@@ -15,8 +15,8 @@ import {
 } from '@auth0/auth0-server-js';
 import type { AuthorizationDetails } from '@auth0/auth0-auth-js';
 import { NuxtCookieHandler } from '../utils/cookie-handler';
-import type { Auth0ClientOptions } from '../plugins/auth.server';
-import type { SessionStore } from '~/src/types';
+import type { Auth0ClientOptions, Auth0PublicConfig, SessionStore } from '~/src/types';
+import { useRuntimeConfig } from '#imports';
 
 export interface Auth0Client {
   startInteractiveLogin: (options?: StartInteractiveLoginOptions) => Promise<URL>;
@@ -69,8 +69,12 @@ function toNuxtInstance(serverClient: ServerClient<{ event: H3Event }>, event: H
  * @param options The options to configure the Auth0 client instance.
  * @returns A new instance of the Auth0 server client configured for server-side use in a Nuxt application.
  */
-function createServerClientInstance(options: Auth0ClientOptions, sessionStore?: SessionStore): ServerClient {
-  const callbackPath = '/auth/callback';
+function createServerClientInstance(
+  options: Auth0ClientOptions,
+  publicConfig: Auth0PublicConfig,
+  sessionStore?: SessionStore
+): ServerClient {
+  const callbackPath = publicConfig.routes?.callback ?? '/auth/callback';
   const redirectUri = new URL(callbackPath, options.appBaseUrl);
 
   return new ServerClient({
@@ -115,13 +119,19 @@ function createServerClientInstance(options: Auth0ClientOptions, sessionStore?: 
  * @throws Error if the event instance is not provided.
  */
 export const useAuth0 = (event: H3Event) => {
+  if (import.meta.client) {
+    throw new Error('The `useAuth0` composable should only be used on the server.');
+  }
+
   if (!event) {
     throw new Error('useAuth0() can not be called without passing an H3Event instance.');
   }
 
-  // If the instance is already created, do not override it.
+  const runtimeConfig = useRuntimeConfig();
+
   event.context.auth0Client ??= createServerClientInstance(
     event.context.auth0ClientOptions,
+    runtimeConfig.public.auth0 as Auth0PublicConfig,
     event.context.auth0SessionStore
   );
 

@@ -8,12 +8,14 @@ import {
   addServerImportsDir,
   resolvePath,
 } from '@nuxt/kit';
+import type { RouteConfig } from './types';
 
 export * from './types';
 export type { SessionConfiguration, SessionCookieOptions, StateData } from '@auth0/auth0-server-js';
 
 export interface ModuleOptions {
   mountRoutes?: boolean;
+  routes?: RouteConfig;
   sessionStoreFactoryPath?: string;
 }
 
@@ -30,8 +32,27 @@ export default defineNuxtModule<ModuleOptions>({
       nuxt.options.nitro.alias['#auth0-session-store'] = await resolvePath(options.sessionStoreFactoryPath);
     } else {
       nuxt.options.nitro.alias = nuxt.options.nitro.alias || {};
-      nuxt.options.nitro.alias['#auth0-session-store'] = resolver.resolve('./runtime/server/utils/load-default-session-store');
+      nuxt.options.nitro.alias['#auth0-session-store'] = resolver.resolve(
+        './runtime/server/utils/load-default-session-store'
+      );
     }
+
+    const defaultRoutes: RouteConfig = {
+      login: '/auth/login',
+      callback: '/auth/callback',
+      logout: '/auth/logout',
+      backchannelLogout: '/auth/backchannel-logout',
+    };
+
+    const routes = {
+      ...defaultRoutes,
+      ...options.routes,
+    };
+
+    // Expose the routes in the public runtime config so that it can be accessed in both server and client contexts
+    nuxt.options.runtimeConfig.public.auth0 = {
+      routes,
+    };
 
     addServerPlugin(resolver.resolve('./runtime/server/plugins/auth.server'));
 
@@ -40,25 +61,25 @@ export default defineNuxtModule<ModuleOptions>({
     if (options?.mountRoutes) {
       addServerHandler({
         handler: resolver.resolve('./runtime/server/api/auth/login.get'),
-        route: '/auth/login',
+        route: routes.login,
         method: 'get',
       });
 
       addServerHandler({
         handler: resolver.resolve('./runtime/server/api/auth/callback.get'),
-        route: '/auth/callback',
+        route: routes.callback,
         method: 'get',
       });
 
       addServerHandler({
         handler: resolver.resolve('./runtime/server/api/auth/logout.get'),
-        route: '/auth/logout',
+        route: routes.logout,
         method: 'get',
       });
 
       addServerHandler({
         handler: resolver.resolve('./runtime/server/api/auth/backchannel-logout.post'),
-        route: '/auth/backchannel-logout',
+        route: routes.backchannelLogout,
         method: 'post',
       });
     }

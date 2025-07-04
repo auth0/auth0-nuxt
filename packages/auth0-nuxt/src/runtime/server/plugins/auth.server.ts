@@ -9,16 +9,6 @@ declare module 'h3' {
   }
 }
 
-export interface Auth0ClientOptions {
-  domain: string;
-  clientId: string;
-  clientSecret: string;
-  appBaseUrl: string;
-  sessionSecret: string;
-  audience?: string;
-  sessionConfiguration?: SessionConfiguration;
-}
-
 async function tryLoadSessionStore(): Promise<SessionStore<StoreOptions> | undefined> {
   try {
     const factoryModule = await import('#auth0-session-store');
@@ -30,7 +20,7 @@ async function tryLoadSessionStore(): Promise<SessionStore<StoreOptions> | undef
 
 export default defineNitroPlugin(async (nitroApp) => {
   const config = useRuntimeConfig();
-  const options = config.auth0 as Auth0ClientOptions;
+  const options = config.auth0;
 
   if (!options.domain) throw new Error('Auth0 configuration error: Domain is required');
   if (!options.clientId) throw new Error('Auth0 configuration error: Client ID is required');
