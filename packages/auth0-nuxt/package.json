@@ -12,7 +12,9 @@
     "clean": "rm -rf ./dist",
     "lint": "eslint \"./**/*.ts*\"",
     "test": "vitest run",
-    "test:ci": "vitest --watch false --coverage"
+    "test:ci": "vitest --watch false --coverage",
+    "pretest": "npx playwright install",
+    "pretest:ci": "npx playwright install"
   },
   "module": "./dist/module.mjs",
   "exports": {
@@ -39,14 +41,18 @@
     "@nuxt/eslint-config": "^1.4.1",
     "@nuxt/module-builder": "^1.0.1",
     "@nuxt/schema": "^3.17.4",
-    "@nuxt/test-utils": "^3.19.1",
+    "@nuxt/test-utils": "^3.19.2",
     "@vitest/coverage-v8": "^3.0.6",
     "eslint": "^9.20.1",
+    "happy-dom": "^18.0.1",
+    "nock": "^14.0.5",
     "nuxt": "^3.17.4",
+    "playwright": "^1.53.2",
+    "playwright-core": "^1.53.2",
     "tsup": "^8.4.0",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.24.0",
-    "vitest": "^3.0.5"
+    "vitest": "^3.2.4"
   },
   "dependencies": {
     "@auth0/auth0-server-js": "^1.0.3",
@@ -56,17 +62,17 @@
     "dist"
   ],
   "publishConfig": {
-      "access": "public"
+    "access": "public"
   },
   "repository": {
-      "type": "git",
-      "url": "git://github.com/auth0/auth0-nuxt.git"
+    "type": "git",
+    "url": "git://github.com/auth0/auth0-nuxt.git"
   },
   "bugs": {
-      "url": "https://github.com/auth0/auth0-nuxt/issues"
+    "url": "https://github.com/auth0/auth0-nuxt/issues"
   },
   "homepage": "https://github.com/auth0/auth0-nuxt#readme",
   "keywords": [
-      "auth0"
+    "auth0"
   ]
 }
