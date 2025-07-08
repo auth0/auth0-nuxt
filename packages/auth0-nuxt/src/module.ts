@@ -58,7 +58,7 @@ export default defineNuxtModule<ModuleOptions>({
 
     addRouteMiddleware({ name: 'auth0', path: resolver.resolve('./runtime/middleware/auth.server'), global: true });
 
-    if (options?.mountRoutes) {
+    if (options?.mountRoutes !== false) {
       addServerHandler({
         handler: resolver.resolve('./runtime/server/api/auth/login.get'),
         route: routes.login,
