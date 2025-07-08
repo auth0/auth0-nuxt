@@ -1,4 +1,4 @@
-import type { H3Event, SessionData } from 'h3';
+import type { H3Event } from 'h3';
 import {
   CookieTransactionStore,
   ServerClient,
@@ -10,6 +10,7 @@ import {
   type LoginBackchannelResult,
   type LogoutOptions,
   type StartInteractiveLoginOptions,
+  type SessionData,
   type TokenSet,
   type UserClaims,
 } from '@auth0/auth0-server-js';
@@ -17,6 +18,7 @@ import type { AuthorizationDetails } from '@auth0/auth0-auth-js';
 import { NuxtCookieHandler } from '../utils/cookie-handler';
 import type { Auth0ClientOptions, Auth0PublicConfig, SessionStore } from '~/src/types';
 import { useRuntimeConfig } from '#imports';
+import { importMetaClient } from '../../helpers/import-meta';
 
 export interface Auth0Client {
   startInteractiveLogin: (options?: StartInteractiveLoginOptions) => Promise<URL>;
@@ -119,7 +121,7 @@ function createServerClientInstance(
  * @throws Error if the event instance is not provided.
  */
 export const useAuth0 = (event: H3Event) => {
-  if (import.meta.client) {
+  if (importMetaClient) {
     throw new Error('The `useAuth0` composable should only be used on the server.');
   }
 
