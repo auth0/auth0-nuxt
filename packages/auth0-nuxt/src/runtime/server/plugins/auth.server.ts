@@ -1,5 +1,5 @@
 import { useRuntimeConfig } from '#imports';
-import { ServerClient, type SessionConfiguration, type SessionStore } from '@auth0/auth0-server-js';
+import { ServerClient, type SessionStore } from '@auth0/auth0-server-js';
 import { defineNitroPlugin } from 'nitropack/dist/runtime/plugin';
 import type { StoreOptions } from '~/src/types';
 
