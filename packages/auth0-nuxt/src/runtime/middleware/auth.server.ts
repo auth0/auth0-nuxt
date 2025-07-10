@@ -1,11 +1,10 @@
 import { defineNuxtRouteMiddleware, useNuxtApp } from "#imports";
-import { useSession } from "../composables/use-session";
+import { useUser } from "../composables/use-user";
 import { importMetaServer } from "../helpers/import-meta";
 
 /**
- * Middleware that ensures the useSession composable is populated with the current session.
- * This is necessary for server-side rendering to ensure the session is available
- * when rendering the page.
+ * Middleware that ensures the useUser composable is populated with the current user.
+ * This is necessary for server-side rendering to ensure the user has a session when rendering the page.
  */
 export default defineNuxtRouteMiddleware(async () => {
   if (importMetaServer) {
@@ -16,8 +15,8 @@ export default defineNuxtRouteMiddleware(async () => {
     const { useAuth0 } = await import('../server/composables/use-auth0');
     const auth0Client = useAuth0(h3Event);
 
-    const session = await auth0Client.getSession();
+    const user = await auth0Client.getUser();
 
-    useSession().value = session;
+    useUser().value = user;
   }
 });

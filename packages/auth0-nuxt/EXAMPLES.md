@@ -64,14 +64,14 @@ NUXT_AUTH0_SESSION_SECRET=<YOUR_LONG_RANDOM_SECRET>
 
 #### Route Middlware
 
-In order to protect a Nuxt route, you can use the SDK's `useSession()` composable method in a custom route middleware. This will check if there is a session and redirect them to the login page if not:
+In order to protect a Nuxt route, you can use the SDK's `useUser()` composable method in a custom route middleware. This will check if there is a user and redirect them to the login page if not:
 
 ```ts
 // middleware/auth.ts
-import { useSession } from '@auth0/auth0-nuxt';
+import { useUser } from '@auth0/auth0-nuxt';
 
 export default defineNuxtRouteMiddleware((to, from) => {
-  const session = useSession();
+  const session = useUser();
 
   if (!session.value) {
     return navigateTo(`/auth/login?returnTo=${to.path}`);
@@ -80,7 +80,7 @@ export default defineNuxtRouteMiddleware((to, from) => {
 ```
 
 > [!NOTE]  
-> You can replace the check above with any check you want, such as checking for a specific user claim. The `useSession()` composable will return the session object if the user is authenticated.
+> You can replace the check above with any check you want, such as checking for a specific user claim.
 
 With that middleware in place, you can protect routes by adding it to the `middleware` property of the corresponding Nuxt route:
 

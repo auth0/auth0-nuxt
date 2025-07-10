@@ -20,7 +20,7 @@ describe('auth.server middleware', async () => {
     },
   });
 
-  it('should populate the session on server-side render and expose it with the useSession hook', async () => {
+  it('should populate the session on server-side render and expose it with the useUser hook', async () => {
     const encryptedSession = await encrypt(
       {
         user: { sub: '<sub>' },

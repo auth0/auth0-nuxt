@@ -4,9 +4,9 @@
  * The returnTo query parameter is used to redirect back to the original requested page after login.
  */
 export default defineNuxtRouteMiddleware((to, from) => {
-  const session = useSession();
+  const user = useUser();
 
-  if (!session.value) {
+  if (!user.value) {
     return navigateTo(`/auth/login?returnTo=${to.path}`);
   }
 });
