@@ -27,6 +27,13 @@ jobs:
     runs-on:
       labels: ubuntu-22.04-2cpu-8ram-75ssd
 
+    env:
+      NUXT_AUTH0_DOMAIN: ${{ secrets.NUXT_AUTH0_DOMAIN }}
+      NUXT_AUTH0_CLIENT_ID: ${{ secrets.NUXT_AUTH0_CLIENT_ID }}
+      NUXT_AUTH0_CLIENT_SECRET: ${{ secrets.NUXT_AUTH0_CLIENT_SECRET }}
+      NUXT_AUTH0_TEST_USERNAME: ${{ secrets.NUXT_AUTH0_TEST_USERNAME }}
+      NUXT_AUTH0_TEST_PASSWORD: ${{ secrets.NUXT_AUTH0_TEST_PASSWORD }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
