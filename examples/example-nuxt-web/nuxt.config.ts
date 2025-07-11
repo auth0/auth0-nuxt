@@ -7,7 +7,18 @@ export default defineNuxtConfig({
       '@auth0/auth0-nuxt',
       {
         mountRoutes: true,
-        sessionStoreFactoryPath: '~/server/utils/session-store-factory.ts',
+        /**
+         * In case you want to use a custom session store factory, you can specify the path to it here.
+         * The session store factory is used to create a session store that is used to store the
+         * session data. This is useful if you want to use a custom session store, such as Redis or MongoDB.
+         * The session store factory should export a function that returns a session store instance.
+         * 
+         * If you enable this, ensure to run `docker-compose up` in the `examples/example-nuxt-web` directory
+         * to start the Redis server, or change the `nitro.storage.redis` configuration to
+         * use a different storage driver.
+         * 
+         * sessionStoreFactoryPath: '~/server/utils/session-store-factory.ts',
+         */
       },
     ],
   ],
