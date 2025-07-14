@@ -43,7 +43,7 @@ describe('callback.get handler', () => {
     expect(mockAuth0Client.completeInteractiveLogin).toHaveBeenCalledWith(new URL('foo', 'http://localhost:3000'));
   });
 
-  it('should redirect to the returnTo url if provided', async () => {
+  it('should redirect to the safe returnTo url if provided', async () => {
     mockAuth0Client.completeInteractiveLogin.mockResolvedValue({
       appState: { returnTo: 'http://localhost:3000/foo' },
     });
@@ -52,7 +52,27 @@ describe('callback.get handler', () => {
     expect(sendRedirectMock).toHaveBeenCalledWith(mockEvent, 'http://localhost:3000/foo');
   });
 
+  it('should redirect to appBaseUrl if returnTo is unsafe', async () => {
+    mockAuth0Client.completeInteractiveLogin.mockResolvedValue({
+      appState: { returnTo: 'http://malicious.com/exploit' },
+    });
+
+    await callbackHandler(mockEvent);
+
+    expect(sendRedirectMock).toHaveBeenCalledWith(mockEvent, 'http://localhost:3000');
+  });
+
   it('should redirect to the appBaseUrl if no returnTo url is provided', async () => {
+    await callbackHandler(mockEvent);
+
+    expect(sendRedirectMock).toHaveBeenCalledWith(mockEvent, 'http://localhost:3000');
+  });
+
+  it('should redirect to appBaseUrl if appState is undefined', async () => {
+    mockAuth0Client.completeInteractiveLogin.mockResolvedValue({
+      appState: undefined,
+    });
+
     await callbackHandler(mockEvent);
 
     expect(sendRedirectMock).toHaveBeenCalledWith(mockEvent, 'http://localhost:3000');
