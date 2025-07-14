@@ -1,7 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { createRouteUrl, toSafeRedirect } from './login.get';
 import loginHandler from './login.get';
-import type { H3Event } from 'h3';
 
 const { sendRedirectMock } = vi.hoisted(() => {
   return { sendRedirectMock: vi.fn() };
@@ -32,6 +30,11 @@ describe('login.get handler', () => {
         appBaseUrl: 'http://localhost:3000',
       },
     },
+    node: {
+      res: {
+        setHeader: vi.fn(),
+      }
+    }
   } as unknown as H3Event;
 
   beforeEach(() => {
@@ -67,48 +70,4 @@ describe('login.get handler', () => {
     expect(sendRedirectMock).toHaveBeenCalledWith(mockEvent, 'http://localhost:3000/foo');
   });
 
-  describe('createRouteUrl', () => {
-    it('should create a URL object correctly', () => {
-      const url = createRouteUrl('/path', 'http://example.com/base/');
-      expect(url.href).toBe('http://example.com/base/path');
-    });
-
-    it('should handle base without trailing slash', () => {
-      const url = createRouteUrl('/path', 'http://example.com/base');
-      expect(url.href).toBe('http://example.com/base/path');
-    });
-
-    it('should handle url without leading slash', () => {
-      const url = createRouteUrl('path', 'http://example.com/base/');
-      expect(url.href).toBe('http://example.com/base/path');
-    });
-  });
-
-  describe('toSafeRedirect', () => {
-    const safeBaseUrl = 'http://localhost:3000';
-
-    it('should return a safe URL if the origin matches', () => {
-      const redirectUrl = '/private';
-      const safeUrl = toSafeRedirect(redirectUrl, safeBaseUrl);
-      expect(safeUrl).toBe('http://localhost:3000/private');
-    });
-
-    it('should return a safe URL for root path', () => {
-      const redirectUrl = '/';
-      const safeUrl = toSafeRedirect(redirectUrl, safeBaseUrl);
-      expect(safeUrl).toBe('http://localhost:3000/');
-    });
-
-    it('should return undefined for an unsafe URL (different origin)', () => {
-      const redirectUrl = 'http://malicious.com/exploit';
-      const safeUrl = toSafeRedirect(redirectUrl, safeBaseUrl);
-      expect(safeUrl).toBeUndefined();
-    });
-
-    it('should handle full URL with same origin', () => {
-      const redirectUrl = 'http://localhost:3000/dashboard';
-      const safeUrl = toSafeRedirect(redirectUrl, safeBaseUrl);
-      expect(safeUrl).toBe('http://localhost:3000/dashboard');
-    });
-  });
 });

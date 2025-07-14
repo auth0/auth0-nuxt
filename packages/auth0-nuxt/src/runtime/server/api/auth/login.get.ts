@@ -1,71 +1,22 @@
 import { useAuth0 } from '../../composables/use-auth0';
 import { defineEventHandler, getQuery, sendRedirect } from 'h3';
+import { toSafeRedirect } from './utils';
 
-/**
- * Ensures the value has a trailing slash.
- * If it does not, it will append one.
- * @param value The value to ensure has a trailing slash.
- * @returns The value with a trailing slash.
- */
-function ensureTrailingSlash(value: string) {
-  return value && !value.endsWith('/') ? `${value}/` : value;
-}
-
-/**
- * Ensures the value does not have a leading slash.
- * If it does, it will trim it.
- * @param value The value to ensure has no leading slash.
- * @returns The value without a leading slash.
- */
-function ensureNoLeadingSlash(value: string) {
-  return value?.startsWith('/') ? value.substring(1, value.length) : value;
-}
-
-/**
- * Utility function to ensure Route URLs are created correctly when using both the root and subpath as base URL.
- * @param url The URL to use.
- * @param base The base URL to use.
- * @returns A URL object, combining the base and url.
- */
-export function createRouteUrl(url: string, base: string) {
-  return new URL(ensureNoLeadingSlash(url), ensureTrailingSlash(base));
-}
-
-/**
- * Function to ensure a redirect URL is safe to use, as in, it has the same origin as the safeBaseUrl.
- * @param dangerousRedirect The redirect URL to check.
- * @param safeBaseUrl The base URL to check against.
- * @returns A safe redirect URL or undefined if the redirect URL is not safe.
- */
-export function toSafeRedirect(dangerousRedirect: string, safeBaseUrl: string): string | undefined {
-  let url: URL;
-
-  try {
-    url = createRouteUrl(dangerousRedirect, safeBaseUrl);
-  } catch {
-    return undefined;
-  }
-
-  if (url.origin === new URL(safeBaseUrl).origin) {
-    return url.toString();
-  }
-
-  return undefined;
+interface LoginParams {
+  returnTo?: string;
 }
 
 export default defineEventHandler(async (event) => {
   const auth0Client = useAuth0(event);
   const auth0ClientOptions = event.context.auth0ClientOptions;
-  const query = getQuery(event);
+  const query = getQuery<LoginParams>(event);
   const dangerousReturnTo = query.returnTo ?? auth0ClientOptions.appBaseUrl;
 
-  const sanitizedReturnTo = toSafeRedirect(dangerousReturnTo ?? '/', auth0ClientOptions.appBaseUrl);
+  const sanitizedReturnTo = toSafeRedirect(dangerousReturnTo as string, auth0ClientOptions.appBaseUrl);
 
-  const authorizationUrl = await auth0Client.startInteractiveLogin(
-    {
-      appState: { returnTo: sanitizedReturnTo },
-    },
-  );
+  const authorizationUrl = await auth0Client.startInteractiveLogin({
+    appState: { returnTo: sanitizedReturnTo },
+  });
 
   sendRedirect(event, authorizationUrl.href);
 });
