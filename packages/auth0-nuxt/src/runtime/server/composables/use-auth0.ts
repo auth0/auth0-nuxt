@@ -16,7 +16,7 @@ import {
 } from '@auth0/auth0-server-js';
 import type { AuthorizationDetails } from '@auth0/auth0-auth-js';
 import { NuxtCookieHandler } from '../utils/cookie-handler';
-import type { Auth0ClientOptions, Auth0PublicConfig, SessionStore } from '~/src/types';
+import type { Auth0ClientOptions, RouteConfig, SessionStore } from '~/src/types';
 import { useRuntimeConfig } from '#imports';
 import { importMetaClient } from '../../helpers/import-meta';
 
@@ -38,6 +38,13 @@ export interface Auth0Client {
 }
 
 let instance: Auth0Client | undefined;
+
+/**
+ * @ignore
+ */
+export interface Auth0PublicConfig {
+  routes?: RouteConfig;
+}
 
 /**
  * Wraps the Auth0 server client instance to provide a Nuxt-specific interface, without the need to pass an H3 event instance to every method.

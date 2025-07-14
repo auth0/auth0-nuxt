@@ -6,3 +6,5 @@ coverage
 
 .nuxt/
 .output/
+
+docs
