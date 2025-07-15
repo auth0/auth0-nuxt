@@ -1,0 +1,114 @@
+import {
+  defineNuxtModule,
+  createResolver,
+  addServerHandler,
+  addServerPlugin,
+  addRouteMiddleware,
+  addImportsDir,
+  addServerImportsDir,
+  resolvePath,
+} from '@nuxt/kit';
+import type { RouteConfig } from './types';
+
+export * from './types';
+export type { SessionConfiguration, SessionCookieOptions, StateData } from '@auth0/auth0-server-js';
+
+/**
+ * Module options for the Auth0 Nuxt module.
+ */
+export interface ModuleOptions {
+  /**
+   * Mount the Auth0 routes in the Nuxt server.
+   * If set to false, you will need to manually mount the routes in your Nuxt server.
+   * @default true
+   */
+  mountRoutes?: boolean;
+
+  /**
+   * The route URLs to use for the Auth0 module.
+   * You can override the default routes by providing your own configuration.
+   * @default { login: '/auth/login', callback: '/auth/callback', logout: '/auth/logout', backchannelLogout: '/auth/backchannel-logout' }
+   */
+  routes?: RouteConfig;
+
+  /**
+   * Path to a custom session store factory.
+   * This allows you to provide a custom session store implementation to use stateful sessions.
+   * The factory should default export a function that returns an object with the methods required by the Auth0 session store.
+   * If not provided, the SDK will use stateless sessions and store everything in the cookie.
+   */
+  sessionStoreFactoryPath?: string;
+}
+
+/**
+ * @ignore
+ */
+export default defineNuxtModule<ModuleOptions>({
+  meta: {
+    name: 'auth0-nuxt',
+    configKey: 'auth0',
+  },
+  async setup(options, nuxt) {
+    const resolver = createResolver(import.meta.url);
+
+    if (options.sessionStoreFactoryPath) {
+      nuxt.options.nitro.alias = nuxt.options.nitro.alias || {};
+      nuxt.options.nitro.alias['#auth0-session-store'] = await resolvePath(options.sessionStoreFactoryPath);
+    } else {
+      nuxt.options.nitro.alias = nuxt.options.nitro.alias || {};
+      nuxt.options.nitro.alias['#auth0-session-store'] = resolver.resolve(
+        './runtime/server/utils/load-default-session-store'
+      );
+    }
+
+    const defaultRoutes: RouteConfig = {
+      login: '/auth/login',
+      callback: '/auth/callback',
+      logout: '/auth/logout',
+      backchannelLogout: '/auth/backchannel-logout',
+    };
+
+    const routes = {
+      ...defaultRoutes,
+      ...options.routes,
+    };
+
+    // Expose the routes in the public runtime config so that it can be accessed in both server and client contexts
+    nuxt.options.runtimeConfig.public.auth0 = {
+      routes,
+    };
+
+    addServerPlugin(resolver.resolve('./runtime/server/plugins/auth.server'));
+
+    addRouteMiddleware({ name: 'auth0', path: resolver.resolve('./runtime/middleware/auth.server'), global: true });
+
+    if (options?.mountRoutes !== false) {
+      addServerHandler({
+        handler: resolver.resolve('./runtime/server/api/auth/login.get'),
+        route: routes.login,
+        method: 'get',
+      });
+
+      addServerHandler({
+        handler: resolver.resolve('./runtime/server/api/auth/callback.get'),
+        route: routes.callback,
+        method: 'get',
+      });
+
+      addServerHandler({
+        handler: resolver.resolve('./runtime/server/api/auth/logout.get'),
+        route: routes.logout,
+        method: 'get',
+      });
+
+      addServerHandler({
+        handler: resolver.resolve('./runtime/server/api/auth/backchannel-logout.post'),
+        route: routes.backchannelLogout,
+        method: 'post',
+      });
+    }
+
+    addImportsDir(resolver.resolve('./runtime/composables'));
+    addServerImportsDir(resolver.resolve('./runtime/server/composables'));
+  },
+});

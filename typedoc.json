@@ -1,0 +1,18 @@
+{
+    "entryPoints": ["packages/*"],
+    "name": "Auth0 Nuxt Monorepo",
+    "entryPointStrategy": "packages",
+    "includeVersion": false,
+    "navigation": {
+        "includeCategories": false,
+        "includeGroups": false,
+        "includeFolders": false,
+        "compactFolders": false,
+        "excludeReferences": true
+    },
+    "categorizeByGroup": false,
+    "packageOptions": {
+        "entryPoints": ["src/module.ts"],
+        "includeVersion": true
+    }
+}
