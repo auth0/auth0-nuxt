@@ -11,7 +11,9 @@
     "build:watch": "tsup --watch",
     "clean": "rm -rf ./dist",
     "lint": "eslint \"./**/*.ts*\"",
-    "test": "vitest run",
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "vitest run ./src/**",
+    "test:e2e": "vitest run ./test/**",
     "test:ci": "vitest --watch false --coverage",
     "pretest": "npx playwright install",
     "pretest:ci": "npx playwright install"
