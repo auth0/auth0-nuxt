@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import loginHandler from './login.get';
+import type { H3Event } from 'h3';
 
 const { sendRedirectMock } = vi.hoisted(() => {
   return { sendRedirectMock: vi.fn() };
