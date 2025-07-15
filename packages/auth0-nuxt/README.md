@@ -73,6 +73,19 @@ To disable this behavior, you can set the `mountRoutes` option to `false` when r
 modules: [['@auth0/auth0-nuxt', { mountRoutes: false }]]
 ```
 
+Alternatively, if you wish to change the endpoint paths used for mounting, you can specify the `routes` option:
+
+```ts
+modules: [['@auth0/auth0-nuxt', { 
+  routes: { 
+    login: '/custom-auth/login',
+    logout: '/custom-auth/logout',
+    callback: '/custom-auth/callback',
+    backchannelLogout: '/custom-auth/backchannel-logout',
+  }
+}]]
+```
+
 ### 3. Adding Login and Logout
 
 When using the built-in mounted routes, the user can be redirected to `/auth/login` to initiate the login flow and `/auth/logout` to log out.
@@ -81,6 +94,8 @@ When using the built-in mounted routes, the user can be redirected to `/auth/log
 <a href="/auth/logout">Log out</a>
 <a href="/auth/login">Log in</a>
 ```
+
+When needed, you can also pass a `returnTo` querystring parameter to the login route to redirect the user back to a specific URL after login was successful.
 
 When not using the built-in routes, you want to call the SDK's `startInteractiveLogin()`, `completeInteractiveLogin()` and `logout()` methods through the `useAuth0()` composable, which is available in the server-side context of your Nuxt application.:
 
