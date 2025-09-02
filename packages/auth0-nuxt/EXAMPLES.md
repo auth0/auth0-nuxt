@@ -239,7 +239,7 @@ Retrieving the token can be achieved by using `getAccessToken` using the server-
 ```ts
 const auth0Client = useAuth0(event);
 const accessTokenResult = await auth0Client.getAccessToken();
-console.log(accessTokenResult.accessToken);
+// You can now use `accessTokenResult.accessToken`
 ```
 
 ## Stateful Sessions
