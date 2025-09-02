@@ -61,7 +61,8 @@
     "@nuxt/kit": "^3.17.4"
   },
   "files": [
-    "dist"
+    "dist",
+    "assets"
   ],
   "publishConfig": {
     "access": "public"
