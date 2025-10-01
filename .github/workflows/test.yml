@@ -22,6 +22,7 @@ jobs:
       matrix:
         node: [ 20, 22 ]
     name: Build Package
+    runs-on: ubuntu-latest
 
     env:
       NUXT_AUTH0_DOMAIN: ${{ secrets.NUXT_AUTH0_DOMAIN }}
