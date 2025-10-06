@@ -15,7 +15,7 @@ To get started, you need to install the module and configure it in your `nuxt.co
 
 #### Install the dependency:
 ```bash
-npm install @auth0/auth0-nuxt
+npm install @auth0/auth0-nuxt@beta
 ```
 
 #### Configure the module in `nuxt.config.ts`:
