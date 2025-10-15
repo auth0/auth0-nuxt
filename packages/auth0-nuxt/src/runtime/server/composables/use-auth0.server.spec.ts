@@ -1,3 +1,4 @@
+// @vitest-environment nuxt
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useAuth0, type Auth0Client } from './use-auth0';
 import { ServerClient } from '@auth0/auth0-server-js';
