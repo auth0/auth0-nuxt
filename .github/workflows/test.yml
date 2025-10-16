@@ -44,8 +44,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build auth0-nuxt
-        run: npm run build -w @auth0/auth0-nuxt
+      - name: Build
+        run: npm run build
 
       - name: Test auth0-nuxt
         run: npm run test:ci -w @auth0/auth0-nuxt
