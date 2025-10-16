@@ -10,8 +10,7 @@
     "clean": "turbo run clean",
     "test": "turbo run test",
     "lint": "turbo run lint",
-    "docs": "typedoc",
-    "prepare": "turbo run build --filter=@auth0/auth0-nuxt"
+    "docs": "typedoc"
   },
   "author": "",
   "license": "ISC",
