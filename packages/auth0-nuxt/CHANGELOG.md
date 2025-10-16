@@ -4,7 +4,7 @@
 
 The `@auth0/auth0-nuxt` library enables user authentication in Nuxt applications.
 
-Version 1.0.0-beta.0 includes the following features:
+The following features are included in v1.0.0-beta.0:
 
 - Automatic route handling for authentication flows:
   - `GET /auth/login`
