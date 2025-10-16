@@ -1,7 +1,8 @@
-import { fileURLToPath } from 'node:url'
-import { describe, it, expect } from 'vitest'
-import { setup, createPage } from '@nuxt/test-utils'
-import { randomUUID } from 'uncrypto'
+// @vitest-environment node
+import { fileURLToPath } from 'node:url';
+import { describe, it, expect } from 'vitest';
+import { setup, createPage } from '@nuxt/test-utils';
+import { randomUUID } from 'uncrypto';
 
 describe('ssr', async () => {
   await setup({
@@ -42,16 +43,17 @@ describe('ssr', async () => {
 
     const usernameInput = page.locator('input[name=username]');
     const passwordInput = page.locator('input[name=password]');
-    const submitButton = page.locator('button[type=submit][name=action]');  
+    const submitButton = page.locator('button[type=submit][name=action]');
 
     await usernameInput.fill(process.env.NUXT_AUTH0_TEST_USERNAME!);
     await passwordInput.fill(process.env.NUXT_AUTH0_TEST_PASSWORD!);
     await submitButton.click();
 
-    // Expect the logout link to be visible after logging in
-    const logoutLink = await page.getByTestId('logout-link');
-    expect(await logoutLink.isVisible()).toBe(true);
+    await page.waitForURL('http://127.0.0.1:3000/');
 
+    // Expect the logout link to be visible after logging in
+    const logoutLink = page.getByTestId('logout-link');
+    expect(await logoutLink.isVisible()).toBe(true);
 
     // Logout
     await logoutLink.click();
@@ -64,7 +66,8 @@ describe('ssr', async () => {
       const confirmButton = page.locator('button[type=submit][value=accept]');
       await confirmButton.click();
     }
-    
+
+    await page.waitForURL('http://127.0.0.1:3000/');
 
     // Expect the login link to be visible after logging out
     expect(await loginLink.isVisible()).toBe(true);
