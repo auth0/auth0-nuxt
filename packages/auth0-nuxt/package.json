@@ -62,7 +62,8 @@
     "@auth0/auth0-server-js": "^1.0.3"
   },
   "files": [
-    "dist"
+    "dist",
+    "assets"
   ],
   "publishConfig": {
     "access": "public"

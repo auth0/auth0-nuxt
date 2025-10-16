@@ -1,3 +1,5 @@
+![Auth0-Nuxt](assets/images/banner.png)
+
 The Auth0 Nuxt SDK is a library for implementing user authentication in Nuxt applications.
 
 > :warning: Please be aware that auth0-nuxt is currently in [**Beta**](https://auth0.com/docs/troubleshoot/product-lifecycle/product-release-stages). Whilst we encourage you to test the update within your applications, we do no recommend using this version in production yet.
