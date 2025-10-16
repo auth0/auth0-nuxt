@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { setup, createPage } from '@nuxt/test-utils';
 import { fileURLToPath } from 'node:url';
