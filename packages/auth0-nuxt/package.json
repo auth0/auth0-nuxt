@@ -6,8 +6,8 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
+    "prebuild": "nuxt-module-build prepare",
     "build": "nuxt-module-build build",
-    "postbuild": "nuxt-module-build prepare",
     "build:watch": "tsup --watch",
     "clean": "rm -rf ./dist",
     "lint": "eslint \"./**/*.ts*\"",
