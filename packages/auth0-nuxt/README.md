@@ -1,5 +1,9 @@
 The Auth0 Nuxt SDK is a library for implementing user authentication in Nuxt applications.
 
+> :warning: Please be aware that auth0-nuxt is currently in [**Beta**](https://auth0.com/docs/troubleshoot/product-lifecycle/product-release-stages). Whilst we encourage you to test the update within your applications, we do no recommend using this version in production yet.
+> As with any beta release, we look forward to your questions and feedback to help us improve the library.
+
+![Stage: Beta Release](https://img.shields.io/badge/stage-fa-yellow)
 ![Release](https://img.shields.io/npm/v/@auth0/auth0-nuxt)
 ![Downloads](https://img.shields.io/npm/dw/@auth0/auth0-nuxt)
 [![License](https://img.shields.io/:license-mit-blue.svg?style=flat)](https://opensource.org/licenses/MIT)
@@ -16,7 +20,7 @@ The Auth0 Nuxt SDK is a library for implementing user authentication in Nuxt app
 ### 1. Install the SDK
 
 ```shell
-npm i @auth0/auth0-nuxt
+npm i @auth0/auth0-nuxt@beta
 ```
 
 This library requires Node.js 20 LTS and newer LTS versions.
