@@ -1,7 +1,7 @@
 Auth0-Nuxt Mono Repo, containing SDK for implementing user authentication in Nuxt applications.
 
-![Release](https://img.shields.io/npm/v/@auth0/auth0-auth-js)
-![Downloads](https://img.shields.io/npm/dw/@auth0/auth0-auth-js)
+![Release](https://img.shields.io/npm/v/@auth0/auth0-nuxt)
+![Downloads](https://img.shields.io/npm/dw/@auth0/auth0-nuxt)
 [![License](https://img.shields.io/:license-mit-blue.svg?style=flat)](https://opensource.org/licenses/MIT)
 
 📚 [Packages](#packages) - 💬 [Feedback](#feedback)
