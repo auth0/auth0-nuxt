@@ -14,7 +14,8 @@ Auth0-Nuxt Mono Repo, containing SDK for implementing user authentication in Nux
 
 The following examples can be found in the examples directory:
 
-- [Nuxt Web App Example](./examples/example-nuxt-web/README.md)
+- [Nuxt 3 Web App Example](./examples/example-nuxt-web/README.md)
+- [Nuxt 4 Web App Example](./examples/example-nuxt-4-web/README.md)
 
 Before running the examples, you need to install the dependencies for the monorepo and build all the packages.
 
