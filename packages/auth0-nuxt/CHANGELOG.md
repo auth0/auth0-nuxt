@@ -1,5 +1,12 @@
 # Change Log
 
+## [v1.0.0-beta.1](https://github.com/auth0/auth0-nuxt/tree/auth0-nuxt-v1.0.0-beta.1) (2025-01-21)
+[Full Changelog](https://github.com/auth0/auth0-nuxt/compare/auth0-nuxt-v1.0.0-beta.0...auth0-nuxt-v1.0.0-beta.1)
+
+**Fixed**
+- fix(auth0-nuxt): do not use --stub to build [\#12](https://github.com/auth0/auth0-nuxt/pull/12) ([frederikprijck](https://github.com/frederikprijck))
+- fix(auth0-nuxt): explicitly define dependencies [\#13](https://github.com/auth0/auth0-nuxt/pull/13) ([frederikprijck](https://github.com/frederikprijck))
+
 ## [v1.0.0-beta.0](https://github.com/auth0/auth0-nuxt/releases/tag/auth0-nuxt-v1.0.0-beta.0) (2025-10-16)
 
 The `@auth0/auth0-nuxt` library enables user authentication in Nuxt applications.
