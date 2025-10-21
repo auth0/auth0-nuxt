@@ -10,13 +10,17 @@
     "clean": "turbo run clean",
     "test": "turbo run test",
     "lint": "turbo run lint",
-    "docs": "typedoc"
+    "docs": "typedoc",
+    "prepare": "husky"
   },
   "author": "",
   "license": "ISC",
   "description": "",
   "packageManager": "npm@10.1.0",
   "devDependencies": {
+    "@commitlint/cli": "^20.1.0",
+    "@commitlint/config-conventional": "^20.0.0",
+    "husky": "^9.1.7",
     "turbo": "^2.4.4",
     "typedoc": "^0.28.7"
   }
