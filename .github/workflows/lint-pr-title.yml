@@ -1,0 +1,32 @@
+name: 'Lint PR Title'
+
+# This workflow runs on pull request events, specifically when a PR
+# is opened, edited, or when new commits are pushed to it.
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+jobs:
+  lint-title:
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Check out the repository's code
+      # This is essential so the workflow can find your local action
+      # in the ./.github/actions/ directory.
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js with npm caching
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm install
+
+      # Step 2: Use your local action
+      # The 'uses' path is relative to the root of your repository.
+      # This tells the runner to look for the action.yml file in that directory.
+      - name: Lint PR Title
+        uses: ./packages/lint-pr-title
