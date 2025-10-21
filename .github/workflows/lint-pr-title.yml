@@ -1,4 +1,4 @@
-name: 'Lint PR Title'
+name: Lint PR Title
 
 # This workflow runs on pull request events, specifically when a PR
 # is opened, edited, or when new commits are pushed to it.
