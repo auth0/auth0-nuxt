@@ -1,6 +1,6 @@
 import { useAuth0 } from '../../composables/use-auth0';
 import { defineEventHandler, getQuery, sendRedirect } from 'h3';
-import { toSafeRedirect } from './utils';
+import { toSafeRedirect } from './../../utils/url';
 
 interface LoginParams {
   returnTo?: string;

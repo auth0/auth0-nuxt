@@ -1,6 +1,6 @@
 import { defineEventHandler, sendRedirect } from 'h3';
 import { useAuth0 } from '../../composables/use-auth0';
-import { toSafeRedirect } from './utils';
+import { toSafeRedirect } from './../../utils/url';
 
 export default defineEventHandler(async (event) => {
   const auth0Client = useAuth0(event);

@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { useAuth0, type Auth0Client } from './use-auth0';
-import { ServerClient } from '@auth0/auth0-server-js';
+import { ServerClient, type ServerClientOptions } from '@auth0/auth0-server-js';
 import type { H3Event } from 'h3';
 import { mockNuxtImport } from '@nuxt/test-utils/runtime';
 
@@ -13,14 +13,24 @@ vi.mock('@auth0/auth0-server-js', async (importOriginal) => {
   };
 });
 
+const { useRuntimeConfigMock } = vi.hoisted(() => {
+  return {
+    useRuntimeConfigMock: vi.fn(() => {
+      return {
+        public: {
+          auth0: {
+            routes: {
+              callback: '/auth/callback',
+            },
+          },
+        },
+      };
+    }),
+  };
+});
+
 mockNuxtImport('useRuntimeConfig', () => {
-  return () => ({
-    public: {
-      auth0: {
-        routes: { callback: '/auth/callback' },
-      },
-    },
-  });
+  return useRuntimeConfigMock;
 });
 
 const metaMock = vi.hoisted(() => ({
@@ -100,5 +110,35 @@ describe('useAuth0 server composable (server environment)', () => {
     metaMock.importMetaClient = true;
 
     expect(() => useAuth0(mockEvent)).toThrow('The `useAuth0` composable should only be used on the server.');
+  });
+
+  it('should correctly configure the redirect_uri when using a sub directory with appBaseUrl', () => {
+    mockEvent.context.auth0ClientOptions.appBaseUrl = 'http://localhost:3000/subdir';
+
+    useAuth0(mockEvent);
+
+    expect(ServerClient).toHaveBeenCalledTimes(1);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const options = (ServerClient as Mock<any>).mock.calls[0]![0] as ServerClientOptions;
+
+    expect(options.authorizationParams!.redirect_uri).toBe('http://localhost:3000/subdir/auth/callback');
+  });
+
+  it('should correctly configure the redirect_uri when using a sub directory with appBaseUrl and a custom callback route', () => {
+    mockEvent.context.auth0ClientOptions.appBaseUrl = 'http://localhost:3000/subdir';
+
+    useRuntimeConfigMock.mockImplementation(() => {
+      return { public: { auth0: { routes: { callback: '/auth/custom-callback' } } } };
+    });
+
+    useAuth0(mockEvent);
+
+    expect(ServerClient).toHaveBeenCalledTimes(1);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const options = (ServerClient as Mock<any>).mock.calls[0]![0] as ServerClientOptions;
+
+    expect(options.authorizationParams!.redirect_uri).toBe('http://localhost:3000/subdir/auth/custom-callback');
   });
 });
