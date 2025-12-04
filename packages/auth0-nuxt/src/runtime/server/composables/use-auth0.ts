@@ -19,6 +19,7 @@ import { NuxtCookieHandler } from '../utils/cookie-handler';
 import type { Auth0ClientOptions, RouteConfig, SessionStore } from '~/src/types';
 import { useRuntimeConfig } from '#imports';
 import { importMetaClient } from '../../helpers/import-meta';
+import { createRouteUrl } from '../utils/url';
 
 export interface Auth0Client {
   startInteractiveLogin: (options?: StartInteractiveLoginOptions) => Promise<URL>;
@@ -84,7 +85,7 @@ function createServerClientInstance(
   sessionStore?: SessionStore
 ): ServerClient {
   const callbackPath = publicConfig.routes?.callback ?? '/auth/callback';
-  const redirectUri = new URL(callbackPath, options.appBaseUrl);
+  const redirectUri = createRouteUrl(callbackPath, options.appBaseUrl);
 
   return new ServerClient({
     domain: options.domain,
