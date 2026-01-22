@@ -2,6 +2,10 @@ name: Deploy GH Pages
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+      - chore/fix-typedoc
 
 permissions:
   contents: write
