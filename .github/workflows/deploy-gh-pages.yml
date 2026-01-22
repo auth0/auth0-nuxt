@@ -35,6 +35,10 @@ jobs:
         shell: bash
         run: npm ci --include=dev
 
+      - name: Build package
+        shell: bash
+        run: npx turbo run build --filter="{./packages/*}"
+
       - name: Build docs
         shell: bash
         run: npm run docs
