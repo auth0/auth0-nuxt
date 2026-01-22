@@ -6,6 +6,8 @@ export default defineNuxtConfig({
       domain: '',
       clientId: '',
       clientSecret: '',
+      appBaseUrl: '',
+      sessionSecret: ''
     },
   },
 });

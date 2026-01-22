@@ -11,9 +11,9 @@ describe('ssr', async () => {
     nuxtConfig: {
       runtimeConfig: {
         auth0: {
-          domain: process.env.NUXT_AUTH0_DOMAIN,
-          clientId: process.env.NUXT_AUTH0_CLIENT_ID,
-          clientSecret: process.env.NUXT_AUTH0_CLIENT_SECRET,
+          domain: process.env.NUXT_AUTH0_DOMAIN!,
+          clientId: process.env.NUXT_AUTH0_CLIENT_ID!,
+          clientSecret: process.env.NUXT_AUTH0_CLIENT_SECRET!,
           sessionSecret: randomUUID(),
           appBaseUrl: 'http://127.0.0.1:3000',
         }

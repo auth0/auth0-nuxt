@@ -1,0 +1,58 @@
+name: Deploy GH Pages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write # For publishing to npm using --provenance
+
+jobs:
+  
+
+  generate-docs:
+    name: Generate API docs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        shell: bash
+        run: npm ci --include=dev
+
+      - name: Build docs
+        shell: bash
+        run: npm run docs
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: docs
+
+  deploy-docs:
+    needs: generate-docs
+    name: Deploy API docs
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
