@@ -79,6 +79,10 @@ jobs:
 
       - name: Extract and commit new docs
         run: |
+          # Configure git
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          
           # Add and commit changes
           git add .
 
