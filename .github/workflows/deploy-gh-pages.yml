@@ -72,6 +72,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: docs
+          path: docs
 
       - name: Extract and commit new docs
         run: ls
