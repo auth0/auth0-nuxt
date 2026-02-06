@@ -4,7 +4,7 @@
 [Full Changelog](https://github.com/auth0/auth0-nuxt/compare/auth0-nuxt-v1.0.0...auth0-nuxt-v1.0.1)
 
 **Fixed**
-- fix(auth0-nuxt): bump h3 to resolve CVE-2026-23527 [\#34](https://github.com/auth0/auth0-nuxt/pull/34) ([frederikprijck](https://github.com/frederikprijck))
+- fix(auth0-nuxt): bump h3 to resolve [CVE-2026-23527](https://github.com/advisories/GHSA-mp2g-9vg9-f4cg) [\#34](https://github.com/auth0/auth0-nuxt/pull/34) ([frederikprijck](https://github.com/frederikprijck))
 
 
 ## [v1.0.0](https://github.com/auth0/auth0-nuxt/releases/tag/auth0-nuxt-v1.0.0) (2026-01-19)
