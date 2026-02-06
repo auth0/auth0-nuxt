@@ -1,5 +1,12 @@
 # Change Log
 
+## [v1.0.1](https://github.com/auth0/auth0-nuxt/tree/v1.0.1) (2026-02-06)
+[Full Changelog](https://github.com/auth0/auth0-nuxt/compare/auth0-nuxt-v1.0.0...auth0-nuxt-v1.0.1)
+
+**Fixed**
+- fix(auth0-nuxt): bump h3 to resolve CVE-2026-23527 [\#34](https://github.com/auth0/auth0-nuxt/pull/34) ([frederikprijck](https://github.com/frederikprijck))
+
+
 ## [v1.0.0](https://github.com/auth0/auth0-nuxt/releases/tag/auth0-nuxt-v1.0.0) (2026-01-19)
 
 The `@auth0/auth0-nuxt` library enables user authentication in Nuxt applications.
