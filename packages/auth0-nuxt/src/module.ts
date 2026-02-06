@@ -61,14 +61,14 @@ export default defineNuxtModule<ModuleOptions>({
       );
     }
 
-    const defaultRoutes: RouteConfig = {
+    const defaultRoutes = {
       login: '/auth/login',
       callback: '/auth/callback',
       logout: '/auth/logout',
       backchannelLogout: '/auth/backchannel-logout',
     };
 
-    const routes = {
+    const routes: Required<RouteConfig> = {
       ...defaultRoutes,
       ...options.routes,
     };
