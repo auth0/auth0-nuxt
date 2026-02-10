@@ -1,0 +1,29 @@
+{
+  "name": "kitchen-sink",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "postinstall": "cd api && npm install",
+    "build": "nuxt build",
+    "dev": "concurrently --names \"API,NUXT\" --prefix-colors \"blue,magenta\" \"npm run dev:api\" \"npm run dev:nuxt\"",
+    "dev:api": "cd api && npm run dev",
+    "dev:nuxt": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "start": "npm run dev"
+  },
+  "dependencies": {
+    "@auth0/auth0-nuxt": "*",
+    "nuxt": "^3.16.2",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
+  },
+  "devDependencies": {
+    "@nuxt/devtools": "^2.4.1",
+    "@nuxt/eslint-config": "^1.4.1",
+    "@nuxt/test-utils": "^3.19.1",
+    "concurrently": "^9.1.2",
+    "eslint": "^9.20.1",
+    "typescript": "^5.7.3"
+  }
+}

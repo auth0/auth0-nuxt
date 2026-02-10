@@ -1,0 +1,16 @@
+{
+  "name": "kitchen-sink-api",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "fastify": "^5.2.0",
+    "@auth0/auth0-fastify-api": "^1.1.0"
+  },
+  "devDependencies": {
+    "dotenv": "^17.2.4"
+  }
+}
