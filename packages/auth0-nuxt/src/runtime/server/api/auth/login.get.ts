@@ -14,8 +14,19 @@ export default defineEventHandler(async (event) => {
 
   const sanitizedReturnTo = toSafeRedirect(dangerousReturnTo as string, auth0ClientOptions.appBaseUrl);
 
+  // Extract authorization parameters from query string
+  const authorizationParams: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(query)) {
+    // We exclude 'returnTo' as it's handled separately
+    if (key !== 'returnTo') {
+      authorizationParams[key] = value;
+    }
+  }
+
   const authorizationUrl = await auth0Client.startInteractiveLogin({
+    pushedAuthorizationRequests: auth0ClientOptions.pushedAuthorizationRequests,
     appState: { returnTo: sanitizedReturnTo },
+    authorizationParams: Object.keys(authorizationParams).length > 0 ? authorizationParams : undefined,
   });
 
   sendRedirect(event, authorizationUrl.href);

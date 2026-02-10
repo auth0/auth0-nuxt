@@ -71,4 +71,68 @@ describe('login.get handler', () => {
     expect(sendRedirectMock).toHaveBeenCalledWith(mockEvent, 'http://localhost:3000/foo');
   });
 
+  it('should pass query params as authorizationParams', async () => {
+    getQueryMock.mockReturnValue({
+      connection: 'google-oauth2',
+      returnTo: 'http://localhost:3000/dashboard'
+    });
+
+    await loginHandler(mockEvent);
+
+    expect(mockAuth0Client.startInteractiveLogin).toHaveBeenCalledWith({
+      appState: { returnTo: 'http://localhost:3000/dashboard' },
+      authorizationParams: { connection: 'google-oauth2' },
+    });
+  });
+
+  it('should pass multiple query params as authorizationParams', async () => {
+    getQueryMock.mockReturnValue({
+      connection: 'Username-Password-Authentication',
+      screen_hint: 'signup',
+      prompt: 'login',
+      returnTo: 'http://localhost:3000/profile'
+    });
+
+    await loginHandler(mockEvent);
+
+    expect(mockAuth0Client.startInteractiveLogin).toHaveBeenCalledWith({
+      appState: { returnTo: 'http://localhost:3000/profile' },
+      authorizationParams: {
+        connection: 'Username-Password-Authentication',
+        screen_hint: 'signup',
+        prompt: 'login'
+      },
+    });
+  });
+
+  it('should not pass authorizationParams when only returnTo is provided', async () => {
+    getQueryMock.mockReturnValue({
+      returnTo: 'http://localhost:3000/tasks'
+    });
+
+    await loginHandler(mockEvent);
+
+    expect(mockAuth0Client.startInteractiveLogin).toHaveBeenCalledWith({
+      appState: { returnTo: 'http://localhost:3000/tasks' },
+      authorizationParams: undefined,
+    });
+  });
+
+  it('should exclude returnTo from authorizationParams', async () => {
+    getQueryMock.mockReturnValue({
+      connection: 'google-oauth2',
+      audience: 'https://api.example.com',
+      returnTo: 'http://localhost:3000/dashboard'
+    });
+
+    await loginHandler(mockEvent);
+
+    const callArgs = mockAuth0Client.startInteractiveLogin.mock.calls[0]![0];
+    expect(callArgs.authorizationParams).not.toHaveProperty('returnTo');
+    expect(callArgs.authorizationParams).toEqual({
+      connection: 'google-oauth2',
+      audience: 'https://api.example.com'
+    });
+  });
+
 });
