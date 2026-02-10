@@ -141,4 +141,57 @@ describe('useAuth0 server composable (server environment)', () => {
 
     expect(options.authorizationParams!.redirect_uri).toBe('http://localhost:3000/subdir/auth/custom-callback');
   });
+
+  it('should pass stateIdentifier to ServerClient when provided', () => {
+    mockEvent.context.auth0ClientOptions.stateIdentifier = 'custom-state-id';
+
+    useAuth0(mockEvent);
+
+    expect(ServerClient).toHaveBeenCalledTimes(1);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const options = (ServerClient as Mock<any>).mock.calls[0]![0] as ServerClientOptions;
+
+    expect(options.stateIdentifier).toBe('custom-state-id');
+  });
+
+  it('should pass transactionIdentifier to ServerClient when provided', () => {
+    mockEvent.context.auth0ClientOptions.transactionIdentifier = 'custom-transaction-id';
+
+    useAuth0(mockEvent);
+
+    expect(ServerClient).toHaveBeenCalledTimes(1);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const options = (ServerClient as Mock<any>).mock.calls[0]![0] as ServerClientOptions;
+
+    expect(options.transactionIdentifier).toBe('custom-transaction-id');
+  });
+
+  it('should pass both stateIdentifier and transactionIdentifier to ServerClient when both are provided', () => {
+    mockEvent.context.auth0ClientOptions.stateIdentifier = 'custom-state-id';
+    mockEvent.context.auth0ClientOptions.transactionIdentifier = 'custom-transaction-id';
+
+    useAuth0(mockEvent);
+
+    expect(ServerClient).toHaveBeenCalledTimes(1);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const options = (ServerClient as Mock<any>).mock.calls[0]![0] as ServerClientOptions;
+
+    expect(options.stateIdentifier).toBe('custom-state-id');
+    expect(options.transactionIdentifier).toBe('custom-transaction-id');
+  });
+
+  it('should not pass stateIdentifier or transactionIdentifier when not provided (backwards compatibility)', () => {
+    useAuth0(mockEvent);
+
+    expect(ServerClient).toHaveBeenCalledTimes(1);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const options = (ServerClient as Mock<any>).mock.calls[0]![0] as ServerClientOptions;
+
+    expect(options.stateIdentifier).toBeUndefined();
+    expect(options.transactionIdentifier).toBeUndefined();
+  });
 });
