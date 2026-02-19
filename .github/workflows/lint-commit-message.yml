@@ -15,17 +15,17 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup node
         uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
-
-      - name: Update npm
-        run: npm install -g npm@latest
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm install
+        run: pnpm install
 
       - name: Validate current commit
-        run: npx commitlint --last --verbose
+        run: pnpm exec commitlint --last --verbose

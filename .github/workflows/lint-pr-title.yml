@@ -11,17 +11,17 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js with npm caching
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js with pnpm caching
         uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
-
-      - name: Update npm
-        run: npm install -g npm@latest
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm install
+        run: pnpm install
 
       - name: Lint PR Title
         uses: ./packages/lint-pr-title
