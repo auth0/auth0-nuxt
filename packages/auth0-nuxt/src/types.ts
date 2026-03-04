@@ -103,6 +103,20 @@ export interface Auth0ClientOptions {
    * This includes options for how sessions are stored and managed.
    */
   sessionConfiguration?: SessionConfiguration;
+
+  /**
+   * Optional identifier for transaction management.
+   * These can be used to customize the keys used for storing state and transaction data.
+   * If not provided, default identifiers will be used.
+   */
+  transactionIdentifier?: string;
+
+  /**
+   * Optional identifier for state management.
+   * This can be used to customize the key used for storing state data.
+   * If not provided, a default identifier will be used.
+   */
+  stateIdentifier?: string;
 }
 
 /**

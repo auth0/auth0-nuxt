@@ -4,6 +4,7 @@
   - [Basic configuration](#basic-configuration)
   - [Configuring the mountes routes](#configuring-the-mountes-routes)
   - [Configuring Stateful Sessions](#configuring-stateful-sessions)
+  - [Customizing State and Transaction Identifiers](#customizing-state-and-transaction-identifiers)
 - [Protecting Routes](#protecting-routes)
 - [Requesting an Access Token to call an API](#requesting-an-access-token-to-call-an-api)
 
@@ -161,6 +162,28 @@ export default defineNuxtConfig({
   },
 });
 ```
+
+### Customizing State and Transaction Identifiers
+
+By default, the SDK uses predefined identifiers for storing state and transaction data in cookies during the authentication flow. If you need to customize these identifiers (for example, to avoid conflicts with other cookies or to meet specific naming requirements), you can configure them in your `nuxt.config.ts`:
+
+```ts
+export default defineNuxtConfig({
+  runtimeConfig: {
+    auth0: {
+      domain: '<AUTH0_DOMAIN>',
+      clientId: '<AUTH0_CLIENT_ID>',
+      clientSecret: '<AUTH0_CLIENT_SECRET>',
+      sessionSecret: '<SESSION_SECRET>',
+      appBaseUrl: '<APP_BASE_URL>',
+      stateIdentifier: 'my-custom-state',
+      transactionIdentifier: 'my-custom-transaction',
+    },
+  },
+});
+```
+
+These identifiers are used as keys for storing temporary authentication data in cookies. If not specified, the SDK will use its default identifiers.
 
 ## Protecting Routes
 
