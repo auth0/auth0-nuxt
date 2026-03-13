@@ -1,8 +1,8 @@
+// @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { useAuth0, type Auth0Client } from './use-auth0';
 import { ServerClient, type ServerClientOptions } from '@auth0/auth0-server-js';
 import type { H3Event } from 'h3';
-import { mockNuxtImport } from '@nuxt/test-utils/runtime';
 
 vi.mock('@auth0/auth0-server-js', async (importOriginal) => {
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
@@ -29,9 +29,9 @@ const { useRuntimeConfigMock } = vi.hoisted(() => {
   };
 });
 
-mockNuxtImport('useRuntimeConfig', () => {
-  return useRuntimeConfigMock;
-});
+vi.mock('#app/nuxt', () => ({
+  useRuntimeConfig: useRuntimeConfigMock,
+}));
 
 const metaMock = vi.hoisted(() => ({
   importMetaServer: true,
@@ -50,7 +50,7 @@ describe('useAuth0 server composable (server environment)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-    vi.mocked(ServerClient).mockImplementation(() => mockServerClientInstance as any);
+    vi.mocked(ServerClient).mockImplementation(function () { return mockServerClientInstance as any; });
 
     mockEvent = {
       context: {
