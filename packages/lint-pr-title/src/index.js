@@ -1,11 +1,11 @@
-const core = require('@actions/core');
-const github = require('@actions/github');
 const load = require('@commitlint/load').default;
 const lint = require('@commitlint/lint').default;
 const format = require('@commitlint/format').default;
 
 async function run() {
   try {
+    const core = await import('@actions/core');
+    const github = await import('@actions/github');
     // 1. Get the pull request title
     const prTitle = github.context.payload.pull_request?.title;
 
