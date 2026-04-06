@@ -106,7 +106,7 @@ export interface Auth0ClientOptions {
 
   /**
    * Optional identifier for transaction management.
-   * These can be used to customize the keys used for storing state and transaction data.
+   * These can be used to customized the key used for storing transaction data.
    * If not provided, default identifiers will be used.
    */
   transactionIdentifier?: string;
