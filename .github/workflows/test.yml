@@ -20,7 +20,7 @@ jobs:
   test:
     strategy:
       matrix:
-        node: [ 20, 22 ]
+        node: [ 20, 22, 24 ]
     name: Build Package
     runs-on: ubuntu-latest
 
