@@ -20,7 +20,7 @@ jobs:
   test:
     strategy:
       matrix:
-        node: [ 20, 22 ]
+        node: [ 20, 22, 24 ]
     name: Build Package
     runs-on: ubuntu-latest
 
@@ -42,7 +42,7 @@ jobs:
           package-manager-cache: false
 
       - name: Update npm
-        run: npm install -g npm@latest
+        run: npm install -g npm@~11.10.0
 
       - name: Install dependencies
         run: npm install
@@ -64,7 +64,7 @@ jobs:
       - name: Setup Node.js with npm caching
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           package-manager-cache: false
 
       - name: Update npm

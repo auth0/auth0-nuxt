@@ -22,7 +22,7 @@ jobs:
   test:
     strategy:
       matrix:
-        node: [ 20, 22 ]
+        node: [ 20, 22, 24 ]
     name: Build Package
     runs-on: ubuntu-latest
     steps:
@@ -36,7 +36,7 @@ jobs:
           package-manager-cache: false
 
       - name: Update npm
-        run: npm install -g npm@latest
+        run: npm install -g npm@~11.10.0
 
       - name: Install dependencies
         run: npm install
