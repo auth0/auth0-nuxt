@@ -20,6 +20,6 @@
     "@nuxt/eslint-config": "^1.9.0",
     "@nuxt/test-utils": "^3.19.2",
     "eslint": "^9.37.0",
-    "typescript": "^5.9.3"
+    "typescript": "~5.9.3"
   }
 }
