@@ -1,6 +1,6 @@
 {
   "name": "auth0-nuxt",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "workspaces": [
     "packages/*",
     "examples/*"
