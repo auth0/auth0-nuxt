@@ -95,6 +95,8 @@ function createServerClientInstance(
       audience: options.audience,
       redirect_uri: redirectUri.toString(),
     },
+    stateIdentifier: options.stateIdentifier,
+    transactionIdentifier: options.transactionIdentifier,
     transactionStore: new CookieTransactionStore(
       {
         secret: options.sessionSecret,
