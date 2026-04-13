@@ -1,5 +1,11 @@
 # Change Log
 
+## [v1.1.0](https://github.com/auth0/auth0-nuxt/tree/v1.1.0) (2026-04-09)
+[Full Changelog](https://github.com/auth0/auth0-nuxt/compare/auth0-nuxt-v1.0.1...auth0-nuxt-v1.1.0)
+
+**Added**
+- feat(auth0-nuxt): allow to customize the tx and state identifiers [\#38](https://github.com/auth0/auth0-nuxt/pull/38) ([frederikprijck](https://github.com/frederikprijck))
+
 ## [v1.0.1](https://github.com/auth0/auth0-nuxt/tree/v1.0.1) (2026-02-06)
 [Full Changelog](https://github.com/auth0/auth0-nuxt/compare/auth0-nuxt-v1.0.0...auth0-nuxt-v1.0.1)
 
