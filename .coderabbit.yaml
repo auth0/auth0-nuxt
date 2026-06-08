@@ -1,0 +1,162 @@
+# yaml-language-server: $schema=https://storage.googleapis.com/coderabbit_public_assets/schema.v2.json
+# CodeRabbit configuration for auth0-nuxt
+# Reference: https://docs.coderabbit.ai/reference/configuration
+#
+# This file is organized into two parts so it can be shared across our TypeScript auth SDKs:
+#   [BASELINE]    — generic to ANY TS auth SDK. Keep identical across repos (or lift to org-level config).
+#   [NUXT]        — specific to this repo (Nuxt module, runtime server routes/middleware/composables, dir layout).
+# When reusing: copy the [BASELINE] entries verbatim into the sibling SDK and replace the [NUXT] block.
+
+language: en-US
+early_access: false
+
+reviews:
+  # ── [BASELINE] review behavior ──────────────────────────────────────────
+  profile: assertive
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - main
+    ignore_title_keywords:
+      - "release"
+      - "chore: release"
+
+  path_filters:
+    - "!**/dist/**"
+    - "!**/coverage/**"
+    - "!**/.nuxt/**"
+    - "!**/.output/**"
+    - "!**/*.d.ts"
+    - "!**/node_modules/**"
+    - "!package-lock.json"
+
+  path_instructions:
+    # ── [BASELINE] generic TypeScript SDK rules ───────────────────────────
+    - path: "**/*.{ts,tsx}"
+      instructions: |
+        This is a published TypeScript SDK. Hold changes to library-grade standards.
+        - Type safety: flag `any`, unsafe non-null assertions (`!`), and unchecked type casts (`as`). Prefer
+          precise types, `unknown` with narrowing, and discriminated unions. Public API types must be explicit
+          and exported intentionally.
+        - Public API surface: treat any change to exported functions, classes, types, or the shape of options
+          objects as a potential breaking change. Call it out explicitly and check it matches the documented
+          API and the exports map in package.json.
+        - Errors: prefer the SDK's typed error classes over throwing strings or bare `Error`. Never swallow
+          errors silently; never leak secrets, tokens, or PII in error messages.
+        - Async: every promise must be awaited or explicitly handled. Flag floating promises and missing
+          try/catch around async I/O in request handlers and middleware.
+        - Comments and JSDoc: public exports should carry accurate JSDoc (TypeDoc is used). Flag stale or
+          misleading docs.
+
+    # ── [BASELINE] generic auth-SDK security rules ────────────────────────
+    # Path is repo-specific (packages/**/src) but the guidance applies to any TS auth SDK; adjust the
+    # glob to the sibling repo's source layout when reusing.
+    - path: "packages/**/src/**/*.ts"
+      instructions: |
+        SECURITY-CRITICAL authentication SDK code. Review with an attacker's mindset.
+        - Secrets & tokens: session secrets, client secrets, access/refresh/ID tokens, and authorization codes
+          must never be logged, returned in responses, or placed in error messages. Flag any such leak.
+        - Cookies: session/auth cookies must be `httpOnly`, `secure` (in production), and use an appropriate
+          `sameSite` value. Flag cookies that weaken these defaults.
+        - CSRF / state / nonce / PKCE: verify that `state` and `nonce` are generated, persisted, and validated
+          on the callback, and that PKCE verifiers are not reused or leaked. Flag any path that skips these
+          checks.
+        - Open redirects: `returnTo` / post-login / post-logout redirect targets must be validated against an
+          allowlist or constrained to the app's own origin. Flag unvalidated user-controlled redirect URLs.
+        - Token validation: ID/access token signature, `iss`, `aud`, `exp`, and `azp`/`nonce` claims must be
+          verified before trust. Flag any decode-without-verify (`jwt.decode` instead of verify) or skipped
+          claim checks.
+        - Timing-safe comparison: compare secrets, signatures, and tokens with constant-time comparison, never
+          `===` on raw secret strings.
+        - Input handling: never trust query, route params, request body, or headers without validation.
+          Watch for prototype-pollution vectors when merging untrusted objects into config or OAuth params.
+        - Auth bypass: auth/claim middleware must fail closed — deny by default and only allow on an explicit
+          positive check. Flag any path where a missing/invalid token still reaches the protected handler.
+
+    # ── [BASELINE] generic test guidance ──────────────────────────────────
+    - path: "**/*.{spec,test}.ts"
+      instructions: |
+        Tests should cover the failure/attack paths, not just the happy path — e.g. missing/expired/tampered
+        tokens, invalid state/nonce, and open-redirect attempts. Flag tests that assert on implementation
+        details rather than behavior, and over-broad mocking that hides real bugs.
+
+    # ── [BASELINE] generic example-app guidance ───────────────────────────
+    - path: "examples/**"
+      instructions: |
+        Example apps demonstrating SDK usage. They are not published, so apply lighter scrutiny on internal
+        structure, but they MUST model secure usage (no hardcoded secrets, secrets read from env, secure cookie
+        and redirect configuration) since users copy them.
+
+    # ── [BASELINE] generic CI/workflow guidance ───────────────────────────
+    - path: ".github/**/*.{yml,yaml}"
+      instructions: |
+        GitHub Actions. Pin third-party actions to a commit SHA, scope `permissions` to least privilege, avoid
+        `pull_request_target` with checkout of untrusted code, and never echo secrets into logs.
+
+    # ════════════════════════════════════════════════════════════════════
+    # [NUXT] repo-specific guidance — replace this block in sibling SDKs
+    # ════════════════════════════════════════════════════════════════════
+    - path: "packages/**/src/module.ts"
+      instructions: |
+        Nuxt module definition (`defineNuxtModule`). Verify runtime config is registered correctly and that
+        secrets (session/client secret) live in private `runtimeConfig`, never in the public `runtimeConfig.public`
+        which is exposed to the client bundle. Check that added server handlers, plugins, middleware, and
+        composables are wired with the correct paths and that customizable identifiers/options keep safe defaults.
+
+    - path: "packages/**/src/runtime/server/api/**/*.ts"
+      instructions: |
+        Nitro server route handlers for the OAuth/OIDC flow (login, callback, logout, backchannel-logout).
+        Verify the full state/nonce/PKCE lifecycle, correct error responses on invalid callbacks, and that
+        backchannel logout validates the logout token before destroying any session. Redirect targets
+        (`returnTo`) must be passed through the safe-redirect check (`toSafeRedirect`) before issuing a redirect.
+
+    - path: "packages/**/src/runtime/**/middleware/**/*.ts"
+      instructions: |
+        Route/auth middleware. Ensure it fails closed on auth/claim checks (deny by default), distinguishes
+        server vs. client execution context correctly, and does not leak protected data to the client. Verify
+        it does not mutate shared request state in surprising ways and is safe to compose in any order.
+
+    - path: "packages/**/src/runtime/server/utils/**/*.ts"
+      instructions: |
+        Server utilities (cookie handling, session store, URL/redirect safety). Cookie read/write/delete must
+        honor secure defaults (`httpOnly`, `secure`, `sameSite`). `maxAge` units: cookies expect seconds — confirm
+        any conversion from ms is correct. The session store must handle a missing/expired session safely, and
+        `toSafeRedirect` must reject cross-origin targets.
+
+    - path: "packages/**/src/runtime/**/composables/**/*.ts"
+      instructions: |
+        Auth composables (`useUser`, `useAuth0`). Server-only composables must never end up in the client bundle
+        or expose tokens/secrets to the client. Verify SSR-safe state handling and that user-facing state never
+        includes sensitive token material.
+
+  # ── [BASELINE] tools ──────────────────────────────────────────────────
+  tools:
+    languagetool:
+      enabled: true
+    eslint:
+      enabled: true
+    actionlint:
+      enabled: true
+    gitleaks:
+      enabled: true
+    semgrep:
+      enabled: true
+    markdownlint:
+      enabled: true
+
+# ── [BASELINE] chat & knowledge base ────────────────────────────────────
+chat:
+  auto_reply: true
+
+knowledge_base:
+  learnings:
+    scope: auto
+  issues:
+    scope: auto
