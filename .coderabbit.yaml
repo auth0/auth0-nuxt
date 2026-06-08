@@ -151,12 +151,6 @@ reviews:
     markdownlint:
       enabled: true
 
-# ── [BASELINE] chat & knowledge base ────────────────────────────────────
+# ── [BASELINE] chat ─────────────────────────────────────────────────────
 chat:
   auto_reply: true
-
-knowledge_base:
-  learnings:
-    scope: auto
-  issues:
-    scope: auto
