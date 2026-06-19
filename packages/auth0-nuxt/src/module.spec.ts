@@ -121,6 +121,8 @@ describe('Auth0 Nuxt Module', () => {
     expect(addServerHandler).toHaveBeenCalledWith(expect.objectContaining({ route: '/custom-logout' }));
     expect(addServerHandler).toHaveBeenCalledWith(expect.objectContaining({ route: '/custom-callback' }));
     expect(addServerHandler).toHaveBeenCalledWith(expect.objectContaining({ route: '/custom-backchannel-logout' }));
+    // `profile` is omitted from customRoutes, so it falls back to the default path.
+    expect(addServerHandler).toHaveBeenCalledWith(expect.objectContaining({ route: '/auth/profile' }));
   });
 
   it('should expose routes in public runtime config', async () => {
