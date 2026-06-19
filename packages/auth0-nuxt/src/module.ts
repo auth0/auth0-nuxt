@@ -3,6 +3,7 @@ import {
   createResolver,
   addServerHandler,
   addServerPlugin,
+  addPlugin,
   addRouteMiddleware,
   addImportsDir,
   addServerImportsDir,
@@ -66,6 +67,7 @@ export default defineNuxtModule<ModuleOptions>({
       callback: '/auth/callback',
       logout: '/auth/logout',
       backchannelLogout: '/auth/backchannel-logout',
+      profile: '/auth/profile',
     };
 
     const routes: Required<RouteConfig> = {
@@ -81,6 +83,8 @@ export default defineNuxtModule<ModuleOptions>({
     addServerPlugin(resolver.resolve('./runtime/server/plugins/auth.server'));
 
     addRouteMiddleware({ name: 'auth0', path: resolver.resolve('./runtime/middleware/auth.server'), global: true });
+
+    addPlugin(resolver.resolve('./runtime/plugins/auth.client'));
 
     if (options?.mountRoutes !== false) {
       addServerHandler({
@@ -105,6 +109,12 @@ export default defineNuxtModule<ModuleOptions>({
         handler: resolver.resolve('./runtime/server/api/auth/backchannel-logout.post'),
         route: routes.backchannelLogout,
         method: 'post',
+      });
+
+      addServerHandler({
+        handler: resolver.resolve('./runtime/server/api/auth/profile.get'),
+        route: routes.profile,
+        method: 'get',
       });
     }
 
