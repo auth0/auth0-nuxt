@@ -1,4 +1,4 @@
-import { InvalidConfigurationError } from '@auth0/auth0-server-js';
+import { InvalidConfigurationError, type SessionConfiguration } from '@auth0/auth0-server-js';
 import type { Auth0ClientOptions } from '~/src/types';
 import { isUrl } from './app-base-url';
 
@@ -51,31 +51,62 @@ export function validateAppBaseUrl(appBaseUrl: string | string[] | undefined): v
 
 /**
  * In production dynamic/allow-list mode, secure session cookies are required.
- * Forces `sessionConfiguration.cookie.secure = true`, or throws if it was
- * explicitly set to `false`.
- * @param options The Auth0 client options, mutated in place.
+ * Returns a `sessionConfiguration` with `cookie.secure = true` enforced, or the
+ * original configuration unchanged when enforcement does not apply.
+ *
+ * Does not mutate its input — the Nuxt runtime config is frozen.
+ * @param appBaseUrl The resolved app base URL (static, allow-list or omitted).
+ * @param sessionConfiguration The configured session configuration, if any.
  * @param isProduction Whether the app is running in production.
+ * @returns The (possibly new) session configuration to use.
  * @throws {InvalidConfigurationError} When secure cookies are explicitly disabled.
  */
-export function enforceSecureCookies(options: Auth0ClientOptions, isProduction: boolean): void {
-  const isDynamic = typeof options.appBaseUrl !== 'string';
+export function enforceSecureCookies(
+  appBaseUrl: string | string[] | undefined,
+  sessionConfiguration: SessionConfiguration | undefined,
+  isProduction: boolean
+): SessionConfiguration | undefined {
+  const isDynamic = typeof appBaseUrl !== 'string';
 
   if (!isProduction || !isDynamic) {
-    return;
+    return sessionConfiguration;
   }
 
-  if (options.sessionConfiguration?.cookie?.secure === false) {
+  if (sessionConfiguration?.cookie?.secure === false) {
     throw new InvalidConfigurationError(
       'Secure cookies are required when relying on dynamic base URLs in production. ' +
         'Remove the explicit `sessionConfiguration.cookie.secure = false` or set a static appBaseUrl.'
     );
   }
 
-  options.sessionConfiguration = {
-    ...options.sessionConfiguration,
+  return {
+    ...sessionConfiguration,
     cookie: {
-      ...options.sessionConfiguration?.cookie,
+      ...sessionConfiguration?.cookie,
       secure: true,
     },
+  };
+}
+
+/**
+ * Resolves and validates the Auth0 client options derived from the (frozen)
+ * Nuxt runtime config. Returns a new options object — the input is not mutated.
+ * @param options The raw Auth0 client options from runtime config.
+ * @param isProduction Whether the app is running in production.
+ * @returns A new, validated options object.
+ * @throws {InvalidConfigurationError} When the configuration is invalid.
+ */
+export function resolveAuth0Options(options: Auth0ClientOptions, isProduction: boolean): Auth0ClientOptions {
+  const appBaseUrl =
+    typeof options.appBaseUrl === 'string' ? parseAppBaseUrl(options.appBaseUrl) : options.appBaseUrl;
+
+  validateAppBaseUrl(appBaseUrl);
+
+  const sessionConfiguration = enforceSecureCookies(appBaseUrl, options.sessionConfiguration, isProduction);
+
+  return {
+    ...options,
+    appBaseUrl,
+    sessionConfiguration,
   };
 }

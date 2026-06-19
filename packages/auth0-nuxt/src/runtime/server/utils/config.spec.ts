@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { InvalidConfigurationError } from '@auth0/auth0-server-js';
-import { parseAppBaseUrl, validateAppBaseUrl, enforceSecureCookies } from './config';
+import {
+  parseAppBaseUrl,
+  validateAppBaseUrl,
+  enforceSecureCookies,
+  resolveAuth0Options,
+} from './config';
 import type { Auth0ClientOptions } from '~/src/types';
 
 describe('parseAppBaseUrl', () => {
@@ -49,34 +54,81 @@ describe('validateAppBaseUrl', () => {
 
 describe('enforceSecureCookies', () => {
   it('forces secure=true in production dynamic mode', () => {
-    const options = { appBaseUrl: undefined } as Auth0ClientOptions;
-    enforceSecureCookies(options, true);
-    expect(options.sessionConfiguration?.cookie?.secure).toBe(true);
+    const result = enforceSecureCookies(undefined, undefined, true);
+    expect(result?.cookie?.secure).toBe(true);
   });
 
   it('forces secure=true in production allow-list mode', () => {
-    const options = { appBaseUrl: ['https://a.com'] } as Auth0ClientOptions;
-    enforceSecureCookies(options, true);
-    expect(options.sessionConfiguration?.cookie?.secure).toBe(true);
+    const result = enforceSecureCookies(['https://a.com'], undefined, true);
+    expect(result?.cookie?.secure).toBe(true);
   });
 
   it('throws when secure is explicitly false in production dynamic mode', () => {
-    const options = {
-      appBaseUrl: undefined,
-      sessionConfiguration: { cookie: { secure: false } },
-    } as Auth0ClientOptions;
-    expect(() => enforceSecureCookies(options, true)).toThrow(InvalidConfigurationError);
+    expect(() => enforceSecureCookies(undefined, { cookie: { secure: false } }, true)).toThrow(
+      InvalidConfigurationError
+    );
   });
 
   it('does not touch secure for a static appBaseUrl in production', () => {
-    const options = { appBaseUrl: 'https://app.example.com' } as Auth0ClientOptions;
-    enforceSecureCookies(options, true);
-    expect(options.sessionConfiguration?.cookie?.secure).toBeUndefined();
+    const result = enforceSecureCookies('https://app.example.com', undefined, true);
+    expect(result?.cookie?.secure).toBeUndefined();
   });
 
   it('does not touch secure outside production', () => {
-    const options = { appBaseUrl: undefined } as Auth0ClientOptions;
-    enforceSecureCookies(options, false);
-    expect(options.sessionConfiguration?.cookie?.secure).toBeUndefined();
+    const result = enforceSecureCookies(undefined, undefined, false);
+    expect(result?.cookie?.secure).toBeUndefined();
+  });
+
+  it('does not mutate the provided session configuration', () => {
+    const sessionConfiguration = { cookie: {} };
+    const result = enforceSecureCookies(undefined, sessionConfiguration, true);
+    expect(result).not.toBe(sessionConfiguration);
+    expect(sessionConfiguration.cookie).toEqual({});
+  });
+});
+
+describe('resolveAuth0Options', () => {
+  it('parses a comma-separated appBaseUrl into an allow-list', () => {
+    const options = {
+      domain: 'd',
+      clientId: 'c',
+      clientSecret: 's',
+      sessionSecret: 'ss',
+      appBaseUrl: 'https://a.com, https://b.com',
+    } as Auth0ClientOptions;
+
+    const result = resolveAuth0Options(options, false);
+
+    expect(result.appBaseUrl).toEqual(['https://a.com', 'https://b.com']);
+  });
+
+  it('returns a new object without mutating a frozen input (runtime config)', () => {
+    const options = Object.freeze({
+      domain: 'd',
+      clientId: 'c',
+      clientSecret: 's',
+      sessionSecret: 'ss',
+      appBaseUrl: 'https://a.com, https://b.com',
+    }) as Auth0ClientOptions;
+
+    // Must not throw on the frozen object.
+    const result = resolveAuth0Options(options, true);
+
+    expect(result).not.toBe(options);
+    expect(options.appBaseUrl).toBe('https://a.com, https://b.com');
+    expect(result.appBaseUrl).toEqual(['https://a.com', 'https://b.com']);
+    expect(result.sessionConfiguration?.cookie?.secure).toBe(true);
+  });
+
+  it('throws when the resolved appBaseUrl is invalid', () => {
+    const options = {
+      domain: 'd',
+      clientId: 'c',
+      clientSecret: 's',
+      sessionSecret: 'ss',
+      appBaseUrl: 'not-a-url',
+    } as Auth0ClientOptions;
+
+    expect(() => resolveAuth0Options(options, false)).toThrow(InvalidConfigurationError);
   });
 });
