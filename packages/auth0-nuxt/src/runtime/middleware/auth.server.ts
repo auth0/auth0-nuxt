@@ -19,12 +19,14 @@ export default defineNuxtRouteMiddleware(async () => {
     const app = useNuxtApp();
     const h3Event = app.ssrContext!.event;
 
-    // Read the route rules Nitro resolved for this request. We deliberately use the
-    // Nitro server context rather than Nuxt's app-level `getRouteRules` composable:
-    // the latter reads a build-time manifest that omits bare `Cache-Control` *header*
-    // route rules, so it would not detect the shared-cacheable case this guard exists
-    // for. `isSharedCacheable` fails closed when this is unavailable.
-    const routeRules = h3Event.context._nitro?.routeRules;
+    // Read the route rules Nitro resolved for this request via Nitro's supported
+    // `getRouteRules` server util. We deliberately do NOT use Nuxt's app-level
+    // `getRouteRules` composable: it reads a build-time manifest that omits bare
+    // `Cache-Control` *header* route rules, so it would not detect the shared-cacheable
+    // case this guard exists for. Imported dynamically (server-only) to keep it out of
+    // the client bundle; `isSharedCacheable` fails closed if it is unavailable.
+    const { getRouteRules } = await import("nitropack/runtime");
+    const routeRules = getRouteRules(h3Event);
     if (isSharedCacheable(routeRules)) {
       if (importMetaDev && !warnedPaths.has(h3Event.path)) {
         warnedPaths.add(h3Event.path);
