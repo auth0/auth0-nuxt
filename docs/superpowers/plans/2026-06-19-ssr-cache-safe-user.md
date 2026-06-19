@@ -261,126 +261,103 @@ git commit -m "feat: skip SSR user write on shared-cacheable routes (#52)"
 
 ---
 
-## Task 4: Integration test — cacheable SSR route stays anonymous
+## Task 4: Unit test — middleware guard skips the user write on cacheable routes
 
-The existing fixture `test/fixtures/basic` is `app.vue`-only (no `pages/` dir) and has no route rules, so its `/` route is non-cacheable — the existing test must keep passing unchanged. Rather than restructure it (adding a `pages/` dir would force a `<NuxtPage/>` rewrite), add a **separate fixture** whose global route rule marks every route shared-cacheable, and assert the raw SSR HTML stays anonymous. This isolates the new test from the existing one.
+> **Revised during execution.** The original plan used an `@nuxt/test-utils` e2e fixture asserting against rendered SSR HTML. That harness (`test/middleware.test.ts`) requires **live Auth0 secrets** (`NUXT_AUTH0_*`, injected from GitHub secrets in CI per `.github/workflows/test.yml`); locally the fixture's `<domain>` placeholder is an invalid URL so no session loads and the test fails regardless of code. An e2e "user absent from cached HTML" assertion would therefore pass **vacuously** locally (user absent because the session never loaded, not because the guard fired), and the anti-vacuity sanity check can't be run without secrets. Instead, test the guard deterministically as a **unit test** that mocks `#imports` / `useAuth0` / `useUser`, matching the repo's existing `vi.mock` unit-test style (see `logout.get.spec.ts`). No secrets, no browser, non-vacuous.
 
 **Files:**
-- Create: `test/fixtures/cacheable/nuxt.config.ts`
-- Create: `test/fixtures/cacheable/app.vue`
-- Create: `test/fixtures/cacheable/package.json`
-- Create: `test/cacheable.test.ts`
+- Create: `src/runtime/middleware/auth.server.spec.ts`
 
-- [ ] **Step 1: Create the cacheable fixture config**
+- [ ] **Step 1: Write the failing test**
 
-Create `test/fixtures/cacheable/nuxt.config.ts` (mirrors `basic` but adds a global cacheable `Cache-Control` header route rule):
+Create `src/runtime/middleware/auth.server.spec.ts`:
 
 ```ts
-export default defineNuxtConfig({
-  ssr: true,
-  modules: ['../../../src/module'],
-  routeRules: {
-    '/**': {
-      headers: { 'Cache-Control': 'public, s-maxage=900' },
-    },
-  },
-  runtimeConfig: {
-    auth0: {
-      domain: '',
-      clientId: '',
-      clientSecret: '',
-      appBaseUrl: '',
-      sessionSecret: '',
-    },
-  },
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+const { defineMiddlewareMock, useNuxtAppMock, getRouteRulesMock, useUserMock, getUserMock } = vi.hoisted(() => ({
+  // defineNuxtRouteMiddleware just returns the handler so we can invoke it directly.
+  defineMiddlewareMock: vi.fn((fn) => fn),
+  useNuxtAppMock: vi.fn(),
+  getRouteRulesMock: vi.fn(),
+  useUserMock: vi.fn(),
+  getUserMock: vi.fn(),
+}));
+
+vi.mock('#imports', () => ({
+  defineNuxtRouteMiddleware: defineMiddlewareMock,
+  useNuxtApp: useNuxtAppMock,
+  getRouteRules: getRouteRulesMock,
+}));
+
+// Force the server branch of the middleware.
+vi.mock('../helpers/import-meta', () => ({
+  importMetaServer: true,
+  importMetaDev: false,
+}));
+
+vi.mock('../composables/use-user', () => ({
+  useUser: useUserMock,
+}));
+
+// The middleware dynamically imports this; the mock path must match the dynamic specifier.
+vi.mock('../server/composables/use-auth0', () => ({
+  useAuth0: vi.fn(() => ({ getUser: getUserMock })),
+}));
+
+import middleware from './auth.server';
+
+const userState: { value: unknown } = { value: undefined };
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  userState.value = undefined;
+  useUserMock.mockReturnValue(userState);
+  useNuxtAppMock.mockReturnValue({ ssrContext: { event: { path: '/some-path' } } });
+  getUserMock.mockResolvedValue({ sub: 'user-1' });
 });
-```
 
-- [ ] **Step 2: Create the fixture `package.json` and `app.vue`**
-
-Create `test/fixtures/cacheable/package.json` (copy the contents of `test/fixtures/basic/package.json` verbatim — run `cat test/fixtures/basic/package.json` and reproduce it).
-
-Create `test/fixtures/cacheable/app.vue` that renders the user `sub` when present (so its presence in raw HTML is detectable):
-
-```vue
-<script setup lang="ts">
-import { useUser } from '../../../src/runtime/composables/use-user';
-const { value: user } = useUser();
-</script>
-
-<template>
-  <div>
-    <span data-testid="user-sub">{{ user?.sub ?? 'anonymous' }}</span>
-  </div>
-</template>
-```
-
-- [ ] **Step 3: Write the failing test**
-
-Create `test/cacheable.test.ts`:
-
-```ts
-// @vitest-environment node
-import { describe, it, expect } from 'vitest';
-import { setup, $fetch } from '@nuxt/test-utils';
-import { fileURLToPath } from 'node:url';
-import { encrypt } from './encryption';
-
-describe('shared-cacheable SSR route', async () => {
-  await setup({
-    rootDir: fileURLToPath(new URL('./fixtures/cacheable', import.meta.url)),
-    nuxtConfig: {
-      ssr: true,
-      runtimeConfig: {
-        auth0: {
-          domain: '<domain>',
-          clientId: '<client_id>',
-          clientSecret: '<client_secret>',
-          sessionSecret: '<secret>',
-          appBaseUrl: 'http://127.0.0.1:3002',
-        },
-      },
-    },
+describe('auth.server middleware', () => {
+  it('writes the user when the route is NOT shared-cacheable', async () => {
+    getRouteRulesMock.mockReturnValue({}); // no cache rules -> not shared-cacheable
+    await (middleware as unknown as () => Promise<void>)();
+    expect(getUserMock).toHaveBeenCalledOnce();
+    expect(userState.value).toEqual({ sub: 'user-1' });
   });
 
-  it('does not embed the authenticated user in the raw SSR HTML', async () => {
-    const encryptedSession = await encrypt(
-      {
-        user: { sub: '<sub>' },
-        idToken: '<id_token>',
-        refreshToken: '<refresh_token>',
-        tokenSets: [],
-        internal: { sid: '<sid>', createdAt: 1 },
-      },
-      '<secret>',
-      '__a0_session',
-      Date.now() / 1000
-    );
+  it('skips the user write on a shared-cacheable route (public/s-maxage header)', async () => {
+    getRouteRulesMock.mockReturnValue({ headers: { 'Cache-Control': 'public, s-maxage=900' } });
+    await (middleware as unknown as () => Promise<void>)();
+    expect(getUserMock).not.toHaveBeenCalled();
+    expect(userState.value).toBeUndefined();
+  });
 
-    const html: string = await $fetch('/', {
-      headers: { cookie: `__a0_session=${encryptedSession}` },
-    });
-
-    // Raw SSR HTML must be anonymous on a shared-cacheable route.
-    expect(html).not.toContain('<sub>');
-    expect(html).not.toContain('auth0_user');
+  it('skips the user write on a cache route rule', async () => {
+    getRouteRulesMock.mockReturnValue({ cache: { maxAge: 60 } });
+    await (middleware as unknown as () => Promise<void>)();
+    expect(getUserMock).not.toHaveBeenCalled();
+    expect(userState.value).toBeUndefined();
   });
 });
 ```
 
-- [ ] **Step 4: Run the test**
+- [ ] **Step 2: Run the test to verify it passes**
 
-Run: `cd packages/auth0-nuxt && npx vitest run test/cacheable.test.ts`
-Expected: PASS — the user `sub` is absent from the server-returned HTML because the guard skipped the SSR write.
+Run: `cd packages/auth0-nuxt && npx vitest run src/runtime/middleware/auth.server.spec.ts`
+Expected: PASS (3 tests). The middleware code from Task 3 already implements the guard, so the test should pass immediately. This is intentional — Task 3 wrote the implementation; this task locks in its behavior with a deterministic, secret-free test.
 
-> Sanity check that the test is meaningful: temporarily revert the guard in `auth.server.ts` (force the write) and confirm this test FAILS (sub present), then restore the guard. This proves the test exercises the guard rather than passing vacuously.
+> If the dynamic-import mock does not intercept (i.e. `getUserMock` is unexpectedly not called in the non-cacheable case, or a real module loads), adjust the `vi.mock` specifier for `use-auth0` to exactly match the dynamic `import('../server/composables/use-auth0')` path used in `auth.server.ts`. Vitest matches `vi.mock` paths against the literal import specifier.
 
-- [ ] **Step 5: Commit**
+> Non-vacuity is structural here: the cacheable tests assert `getUser` was **not** called AND state stayed `undefined`, while the non-cacheable test asserts the opposite. If the guard were removed, the cacheable tests would fail (getUser would be called) — so the test genuinely exercises the guard.
+
+- [ ] **Step 3: Commit**
 
 ```bash
-git add test/cacheable.test.ts test/fixtures/cacheable
-git commit -m "test: assert cacheable SSR route stays anonymous (#52)"
+git add src/runtime/middleware/auth.server.spec.ts
+git commit -m "test: cover SSR middleware cache guard (#52)"
 ```
+
+> Note: the pre-existing e2e test `test/middleware.test.ts` is left unchanged. It only passes in CI with live `NUXT_AUTH0_*` secrets; that is an existing condition, not introduced or fixed by this work.
 
 ---
 
