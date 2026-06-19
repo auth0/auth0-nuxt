@@ -198,6 +198,16 @@ export default defineEventHandler(async (event) => {
 > The above examples are both to protect routes by the means of a session, and not API routes using a bearer token. 
 
 
+#### 4.3 SSR caching and the authenticated user
+
+By default the module fetches the authenticated user during SSR and exposes it via `useUser()`, which Nuxt serializes into the `__NUXT__` payload embedded in the SSR HTML. To keep that HTML safe to share, the module **does not write the user into the SSR payload on shared-cacheable routes** — it hydrates the user on the client instead, from the `no-store` profile endpoint (`/auth/profile` by default).
+
+A route is treated as shared-cacheable when its Nitro route rules set `cache`, `swr`, or `isr`, or emit a `Cache-Control` header containing `public` or `s-maxage`. On those routes the SSR HTML stays anonymous and the user is restored after hydration, so auth-dependent UI still renders for the logged-in user; on non-cacheable routes the user is server-rendered as before.
+
+> [!IMPORTANT]  
+> A bare `Cache-Control: public, s-maxage` header is forwarded to your downstream CDN but is not part of Nitro's in-process cache. Without this behaviour, a shared cache keyed on path could serve one user's claims to another. The module fails closed: if route rules are unavailable, it keeps the SSR payload anonymous and hydrates on the client. See [`EXAMPLES.md`](./EXAMPLES.md#ssr-caching-and-the-authenticated-user) for details and local verification.
+
+
 ### 5. Requesting an Access Token to call an API
 
 If you need to call an API on behalf of the user, you want to specify the `audience` parameter when registering the plugin. This will make the SDK request an access token for the specified audience when the user logs in.

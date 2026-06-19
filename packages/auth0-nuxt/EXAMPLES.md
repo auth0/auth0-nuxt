@@ -239,6 +239,31 @@ export default defineEventHandler(async (event) => {
 > The above examples are both to protect routes by the means of a session, and not API routes using a bearer token. 
 
 
+## SSR caching and the authenticated user
+
+By default the module fetches the authenticated user during server-side rendering and exposes it through `useUser()`. Because `useUser()` is backed by `useState`, Nuxt serializes the user into the `__NUXT__` payload that is embedded in the SSR HTML.
+
+To keep that HTML safe to share, the module **does not write the user into the SSR payload on shared-cacheable routes**. Instead, the user is hydrated on the client after load, from the `no-store` profile endpoint (`/auth/profile` by default). A route is treated as shared-cacheable when its Nitro route rules set `cache`, `swr`, or `isr`, **or** emit a `Cache-Control` header containing `public` or `s-maxage`:
+
+```ts
+// nuxt.config.ts — this marks '/**' shared-cacheable
+export default defineNuxtConfig({
+  routeRules: {
+    '/**': {
+      headers: { 'Cache-Control': 'public, s-maxage=900' },
+    },
+  },
+});
+```
+
+On such routes the SSR HTML stays anonymous (no user claims in the payload) and the user is restored on the client after hydration, so auth-dependent UI (an account menu, etc.) still renders for the logged-in user. On routes that are not shared-cacheable (for example `no-store`), the user is server-rendered exactly as before.
+
+> [!IMPORTANT]  
+> A bare `Cache-Control: public, s-maxage` header is forwarded to your downstream CDN but is **not** part of Nitro's in-process cache. Without this behaviour, a shared cache keyed on path could serve one user's claims to another visitor. The module fails closed: if the route's rules cannot be determined, it keeps the SSR payload anonymous and hydrates on the client.
+
+If you disable route mounting (`mountRoutes: false`), mount the profile handler yourself at the configured `routes.profile` path so client-side hydration keeps working. You can also customize the path via the `routes.profile` option (see [Configuring the mounted routes](#configuring-the-mountes-routes)).
+
+
 ## Requesting an Access Token to call an API
 
 If you need to call an API on behalf of the user, you want to specify the `audience` parameter when registering the runtime configuration for the auth0 module. This will make the SDK request an access token for the specified audience when the user logs in.
