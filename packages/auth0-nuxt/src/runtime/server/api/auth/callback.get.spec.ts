@@ -29,6 +29,8 @@ describe('callback.get handler', () => {
     node: {
       req: {
         url: 'foo',
+        headers: { host: 'localhost:3000' },
+        socket: {},
       },
     },
   } as unknown as H3Event;
@@ -76,5 +78,20 @@ describe('callback.get handler', () => {
     await callbackHandler(mockEvent);
 
     expect(sendRedirectMock).toHaveBeenCalledWith(mockEvent, 'http://localhost:3000');
+  });
+
+  it('resolves the base url dynamically from the request host', async () => {
+    const dynamicEvent = {
+      context: { auth0ClientOptions: { appBaseUrl: undefined } },
+      node: { req: { url: 'foo', headers: { host: 'app2.localhost:3000' }, socket: {} } },
+    } as unknown as H3Event;
+    mockAuth0Client.completeInteractiveLogin.mockResolvedValue({ appState: undefined });
+
+    await callbackHandler(dynamicEvent);
+
+    expect(mockAuth0Client.completeInteractiveLogin).toHaveBeenCalledWith(
+      new URL('foo', 'http://app2.localhost:3000')
+    );
+    expect(sendRedirectMock).toHaveBeenCalledWith(dynamicEvent, 'http://app2.localhost:3000');
   });
 });
