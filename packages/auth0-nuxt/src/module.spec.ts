@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   addServerHandler,
   addServerPlugin,
+  addPlugin,
   addRouteMiddleware,
   addImportsDir,
   addServerImportsDir,
@@ -21,6 +22,7 @@ vi.mock('@nuxt/kit', async () => {
     }),
     addServerHandler: vi.fn(),
     addServerPlugin: vi.fn(),
+    addPlugin: vi.fn(),
     addRouteMiddleware: vi.fn(),
     addImportsDir: vi.fn(),
     addServerImportsDir: vi.fn(),
@@ -59,6 +61,7 @@ describe('Auth0 Nuxt Module', () => {
       path: 'resolved/runtime/middleware/auth.server',
       global: true,
     });
+    expect(addPlugin).toHaveBeenCalledWith('resolved/runtime/plugins/auth.client');
     expect(addImportsDir).toHaveBeenCalledWith('resolved/runtime/composables');
     expect(addServerImportsDir).toHaveBeenCalledWith('resolved/runtime/server/composables');
   });
@@ -74,7 +77,7 @@ describe('Auth0 Nuxt Module', () => {
     // @ts-expect-error: module is a function
     await auth0Module.setup({}, mockNuxt);
 
-    expect(addServerHandler).toHaveBeenCalledTimes(4);
+    expect(addServerHandler).toHaveBeenCalledTimes(5);
     expect(addServerHandler).toHaveBeenCalledWith({
       handler: 'resolved/runtime/server/api/auth/login.get',
       route: '/auth/login',
@@ -95,6 +98,11 @@ describe('Auth0 Nuxt Module', () => {
       route: '/auth/backchannel-logout',
       method: 'post',
     });
+    expect(addServerHandler).toHaveBeenCalledWith({
+      handler: 'resolved/runtime/server/api/auth/profile.get',
+      route: '/auth/profile',
+      method: 'get',
+    });
   });
 
   it('should mount custom routes when provided and mountRoutes is true', async () => {
@@ -108,7 +116,7 @@ describe('Auth0 Nuxt Module', () => {
     // @ts-expect-error: module is a function
     await auth0Module.setup({ mountRoutes: true, routes: customRoutes }, mockNuxt);
 
-    expect(addServerHandler).toHaveBeenCalledTimes(4);
+    expect(addServerHandler).toHaveBeenCalledTimes(5);
     expect(addServerHandler).toHaveBeenCalledWith(expect.objectContaining({ route: '/custom-login' }));
     expect(addServerHandler).toHaveBeenCalledWith(expect.objectContaining({ route: '/custom-logout' }));
     expect(addServerHandler).toHaveBeenCalledWith(expect.objectContaining({ route: '/custom-callback' }));
@@ -124,6 +132,7 @@ describe('Auth0 Nuxt Module', () => {
       callback: '/auth/callback',
       logout: '/auth/logout',
       backchannelLogout: '/auth/backchannel-logout',
+      profile: '/auth/profile',
     };
 
     // @ts-expect-error: module is a function
