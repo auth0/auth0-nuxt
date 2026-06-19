@@ -84,8 +84,14 @@ function createServerClientInstance(
   publicConfig: Auth0PublicConfig,
   sessionStore?: SessionStore
 ): ServerClient {
+  // The redirect_uri is only known statically when appBaseUrl is a single
+  // string. In dynamic/allow-list mode the login handler supplies it per
+  // request, and the callback builds its URL from the resolved base.
   const callbackPath = publicConfig.routes?.callback ?? '/auth/callback';
-  const redirectUri = createRouteUrl(callbackPath, options.appBaseUrl);
+  const redirectUri =
+    typeof options.appBaseUrl === 'string'
+      ? createRouteUrl(callbackPath, options.appBaseUrl).toString()
+      : undefined;
 
   return new ServerClient({
     domain: options.domain,
@@ -93,7 +99,7 @@ function createServerClientInstance(
     clientSecret: options.clientSecret,
     authorizationParams: {
       audience: options.audience,
-      redirect_uri: redirectUri.toString(),
+      redirect_uri: redirectUri,
     },
     stateIdentifier: options.stateIdentifier,
     transactionIdentifier: options.transactionIdentifier,
