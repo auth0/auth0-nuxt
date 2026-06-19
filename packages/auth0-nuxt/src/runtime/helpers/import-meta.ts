@@ -6,3 +6,4 @@
  */
 export const importMetaServer = import.meta.server;
 export const importMetaClient = import.meta.client;
+export const importMetaDev = import.meta.dev;
