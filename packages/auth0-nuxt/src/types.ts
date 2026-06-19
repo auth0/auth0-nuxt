@@ -147,4 +147,12 @@ export interface RouteConfig {
    * @example '/auth/backchannel-logout'
    */
   backchannelLogout?: string;
+
+  /**
+   * The URL for the user profile (session) route.
+   * Served `no-store` and fetched client-side to hydrate the user on shared-cacheable
+   * or client-rendered pages.
+   * @example '/auth/profile'
+   */
+  profile?: string;
 }
