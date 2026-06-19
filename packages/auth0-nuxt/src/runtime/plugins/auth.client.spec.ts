@@ -10,7 +10,7 @@ vi.mock('#app/nuxt', async (importOriginal) => {
   const actual = await importOriginal<typeof import('#app/nuxt')>();
   return {
     ...actual,
-    defineNuxtPlugin: (fn: any) => fn,
+    defineNuxtPlugin: (fn: unknown) => fn,
     useRuntimeConfig: vi.fn(() => ({
       public: { auth0: { routes: { profile: '/auth/profile' } } },
     })),

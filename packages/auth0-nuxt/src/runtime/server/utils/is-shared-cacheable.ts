@@ -1,4 +1,15 @@
-import type { NitroRouteRules } from 'nitropack';
+/**
+ * Subset of the resolved Nitro route rules this predicate inspects. Declared
+ * structurally (rather than importing `NitroRouteRules`) because the resolved type
+ * does not surface `swr` / `isr` — Nitro normalizes those into `cache` at config time —
+ * yet we still defensively check them in case an unresolved config object is passed.
+ */
+export interface CacheRouteRules {
+  cache?: unknown;
+  swr?: unknown;
+  isr?: unknown;
+  headers?: Record<string, string>;
+}
 
 /**
  * Determines whether a route's resolved Nitro route rules make its response
@@ -11,7 +22,7 @@ import type { NitroRouteRules } from 'nitropack';
  * `Cache-Control` header route rule containing `public` or `s-maxage` — the latter is
  * forwarded to the downstream CDN and is NOT reflected by Nitro's own cache signals.
  */
-export function isSharedCacheable(routeRules: NitroRouteRules | undefined): boolean {
+export function isSharedCacheable(routeRules: CacheRouteRules | undefined): boolean {
   if (!routeRules) return true;
   if (routeRules.cache || routeRules.swr || routeRules.isr) return true;
 

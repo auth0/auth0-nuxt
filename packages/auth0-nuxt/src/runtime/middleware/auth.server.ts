@@ -23,7 +23,6 @@ export default defineNuxtRouteMiddleware(async () => {
     if (isSharedCacheable(routeRules)) {
       if (importMetaDev && !warnedPaths.has(h3Event.path)) {
         warnedPaths.add(h3Event.path);
-        // eslint-disable-next-line no-console
         console.warn(
           `[auth0-nuxt] Route "${h3Event.path}" is shared-cacheable; skipping the SSR user write to keep cached HTML anonymous. ` +
             `The user will be hydrated client-side from the profile endpoint.`

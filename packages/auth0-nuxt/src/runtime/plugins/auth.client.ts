@@ -1,4 +1,5 @@
 import { defineNuxtPlugin, useRuntimeConfig } from '#imports';
+import type { UserClaims } from '@auth0/auth0-server-js';
 import { useUser } from '../composables/use-user';
 import type { RouteConfig } from '../../types';
 
@@ -21,7 +22,7 @@ export default defineNuxtPlugin(async (nuxtApp) => {
 
   nuxtApp.hook('app:suspense:resolve', async () => {
     try {
-      const fetched = await $fetch(routes.profile, {
+      const fetched = await $fetch<UserClaims | null>(routes.profile, {
         headers: { accept: 'application/json' },
         retry: false,
       });
