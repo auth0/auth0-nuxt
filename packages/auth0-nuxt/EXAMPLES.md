@@ -281,6 +281,18 @@ export default defineNuxtConfig({
 
 On a route with `auth0: { ssrUser: false }`, the middleware skips the SSR user write even when the route is not shared-cacheable, so the HTML stays anonymous and the user is hydrated client-side from the profile endpoint instead. This composes with the cache guard — either condition causes the write to be skipped — and is evaluated server-side, so it also covers routes that have no page component.
 
+The inverse also works: disable the SSR user write globally and opt **in** on specific routes. Nitro merges route rules by specificity, so the more specific `ssrUser: true` wins:
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  routeRules: {
+    '/**':        { auth0: { ssrUser: false } }, // off everywhere by default
+    '/dashboard': { auth0: { ssrUser: true } },  // ...but server-render the user here
+  },
+});
+```
+
 > [!NOTE]  
 > The `auth0` route-rule key is read at runtime and needs no extra setup. If you type-check your `nuxt.config` and want the key typed, add the following to a `.d.ts` in your project:
 >

@@ -219,6 +219,18 @@ export default defineNuxtConfig({
 });
 ```
 
+You can also invert it — disable the SSR user write globally and opt **in** on specific routes. Route rules are merged by specificity, so the more specific rule wins:
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  routeRules: {
+    '/**':        { auth0: { ssrUser: false } }, // off everywhere by default
+    '/dashboard': { auth0: { ssrUser: true } },  // ...but on for this route
+  },
+});
+```
+
 > [!NOTE]  
 > The `auth0` route-rule key works at runtime without any extra setup. If you type-check your `nuxt.config` and want the key typed, add this declaration to a `.d.ts` in your project:
 >
