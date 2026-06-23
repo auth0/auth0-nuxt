@@ -104,4 +104,17 @@ describe('SSR caching and the user in the payload', async () => {
     expect(html).not.toContain(EMAIL);
     expect(html).toContain('anonymous');
   });
+
+  it('does NOT server-render the user on a case-variant of an opted-out route (CVE-2026-53721)', async () => {
+    // vue-router renders `/opted-out` for a mixed-case request, but Nitro's route-rule
+    // matcher is case-sensitive, so `/Opted-Out` would dodge the opt-out rule. The guard
+    // re-checks the lowercased path, so the user must still be absent from the SSR HTML.
+    const html: string = await $fetch('/Opted-Out', {
+      headers: { cookie: await sessionCookie() },
+    });
+
+    expect(html).not.toContain(SUB);
+    expect(html).not.toContain(EMAIL);
+    expect(html).toContain('anonymous');
+  });
 });
