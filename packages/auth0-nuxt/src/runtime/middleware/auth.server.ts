@@ -25,17 +25,27 @@ export default defineNuxtRouteMiddleware(async () => {
     // `Cache-Control` *header* route rules, so it would not detect the shared-cacheable
     // case this guard exists for. Imported dynamically (server-only) to keep it out of
     // the client bundle; `isSharedCacheable` fails closed if it is unavailable.
-    const { getRouteRules } = await import("nitropack/runtime");
-    const routeRules = getRouteRules(h3Event);
-    if (isSharedCacheable(routeRules)) {
-      if (importMetaDev && !warnedPaths.has(h3Event.path)) {
-        warnedPaths.add(h3Event.path);
-        console.warn(
-          `[auth0-nuxt] Route "${h3Event.path}" is shared-cacheable; skipping the SSR user write to keep cached HTML anonymous. ` +
-            `The user will be hydrated client-side from the profile endpoint.`
-        );
-      }
+    const { getRouteRules } = await import('nitropack/runtime');
+
+    // First check the rules for the request path as-is.
+    if (isSharedCacheable(getRouteRules(h3Event))) {
+      maybeWarn(h3Event.path);
       return;
+    }
+
+    // Then re-check against the lowercased path. Nitro's route-rule matcher is
+    // case-sensitive, but vue-router matches routes case-insensitively, so a request like
+    // `/Cacheable` renders the `/cacheable` page while dodging its route rule
+    // (CVE-2026-53721). We resolve the rules for the lowercased path too — via a synthetic
+    // event with a fresh context so `getRouteRules` recomputes rather than returning the
+    // cached result — so the cache guard cannot be bypassed by casing.
+    const lowerPath = h3Event.path.toLowerCase();
+    if (lowerPath !== h3Event.path) {
+      const lowerEvent = { ...h3Event, path: lowerPath, context: {} } as typeof h3Event;
+      if (isSharedCacheable(getRouteRules(lowerEvent))) {
+        maybeWarn(h3Event.path);
+        return;
+      }
     }
 
     // As we can only import this composable on the server, we need to dynamically import it.
@@ -47,3 +57,13 @@ export default defineNuxtRouteMiddleware(async () => {
     useUser().value = user;
   }
 });
+
+function maybeWarn(path: string): void {
+  if (importMetaDev && !warnedPaths.has(path)) {
+    warnedPaths.add(path);
+    console.warn(
+      `[auth0-nuxt] Route "${path}" is shared-cacheable; skipping the SSR user write to keep cached HTML anonymous. ` +
+        `The user will be hydrated client-side from the profile endpoint.`
+    );
+  }
+}

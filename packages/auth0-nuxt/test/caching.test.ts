@@ -85,4 +85,17 @@ describe('SSR caching and PII in the payload (#52)', async () => {
     expect(html).not.toContain(SUB);
     expect(html).toContain('anonymous');
   });
+
+  it('does NOT server-render the user on a case-variant of a shared-cacheable route (CVE-2026-53721)', async () => {
+    // vue-router renders `/cacheable` for a mixed-case request, but Nitro's route-rule
+    // matcher is case-sensitive, so `/Cacheable` would dodge the shared-cacheable rule.
+    // The guard re-checks the lowercased path, so the user must still be absent.
+    const html: string = await $fetch('/Cacheable', {
+      headers: { cookie: await sessionCookie() },
+    });
+
+    expect(html).not.toContain(SUB);
+    expect(html).not.toContain(EMAIL);
+    expect(html).toContain('anonymous');
+  });
 });
