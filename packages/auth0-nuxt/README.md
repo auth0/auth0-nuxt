@@ -207,6 +207,30 @@ A route is treated as shared-cacheable when its Nitro route rules set `cache`, `
 > [!IMPORTANT]  
 > A bare `Cache-Control: public, s-maxage` header is forwarded to your downstream CDN but is not part of Nitro's in-process cache. Without this behaviour, a shared cache keyed on path could serve one user's claims to another. The module fails closed: if route rules are unavailable, it keeps the SSR payload anonymous and hydrates on the client. See [`EXAMPLES.md`](./EXAMPLES.md#ssr-caching-and-the-authenticated-user) for details and local verification.
 
+The built-in guard detects caching expressed through Nitro route rules. If your responses are stored by a shared cache / CDN configured **outside** your app (for example an edge rule that keys on path and sets its own TTL, without your app emitting `public`/`s-maxage`), the guard cannot see it. For those routes — or to disable the SSR user write entirely — set the `auth0.ssrUser` route rule to `false`. The user is then hydrated client-side from the profile endpoint instead:
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  routeRules: {
+    '/public/**': { auth0: { ssrUser: false } }, // opt out per route (and patterns)
+    // '/**': { auth0: { ssrUser: false } },      // or disable globally
+  },
+});
+```
+
+> [!NOTE]  
+> The `auth0` route-rule key works at runtime without any extra setup. If you type-check your `nuxt.config` and want the key typed, add this declaration to a `.d.ts` in your project:
+>
+> ```ts
+> declare module 'nitropack' {
+>   interface NitroRouteConfig {
+>     auth0?: { ssrUser?: boolean };
+>   }
+> }
+> export {};
+> ```
+
 
 ### 5. Requesting an Access Token to call an API
 

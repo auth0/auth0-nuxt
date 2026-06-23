@@ -1,31 +1,42 @@
 import { describe, it, expect, vi } from 'vitest';
-import { isRequestSharedCacheable } from './is-request-shared-cacheable';
+import { shouldSkipSsrUserWrite } from './should-skip-ssr-user-write';
 
 /**
- * `isRequestSharedCacheable` is the pure decision the SSR auth middleware delegates to.
+ * `shouldSkipSsrUserWrite` is the pure decision the SSR auth middleware delegates to: skip
+ * the write when the route opts out (`auth0: { ssrUser: false }`) or is shared-cacheable.
  * It is extracted from the middleware so it can be unit-tested directly: the middleware
  * itself is gated behind a literal `import.meta.server` guard (required so the bundler
  * strips the server-only `nitropack/runtime` import from the client build), which the test
  * transform folds to `false` — making the middleware body unreachable under Vitest. Keeping
  * the branching logic here, dependency-injecting `getRouteRules`, sidesteps that entirely.
  */
-describe('isRequestSharedCacheable', () => {
-  it('returns false when the request path has no cache rules', () => {
+describe('shouldSkipSsrUserWrite', () => {
+  it('returns false when the request path has no cache rules and no opt-out', () => {
     const getRouteRules = vi.fn().mockReturnValue({});
-    expect(isRequestSharedCacheable(getRouteRules, { path: '/dashboard' })).toBe(false);
+    expect(shouldSkipSsrUserWrite(getRouteRules, { path: '/dashboard' })).toBe(false);
   });
 
   it('returns true when the request path is shared-cacheable', () => {
     const getRouteRules = vi.fn().mockReturnValue({ headers: { 'Cache-Control': 'public, s-maxage=900' } });
-    expect(isRequestSharedCacheable(getRouteRules, { path: '/cacheable' })).toBe(true);
+    expect(shouldSkipSsrUserWrite(getRouteRules, { path: '/cacheable' })).toBe(true);
+  });
+
+  it('returns true when the route opts out via auth0.ssrUser=false (even when not cacheable)', () => {
+    const getRouteRules = vi.fn().mockReturnValue({ auth0: { ssrUser: false } });
+    expect(shouldSkipSsrUserWrite(getRouteRules, { path: '/opted-out' })).toBe(true);
+  });
+
+  it('returns false when the route explicitly opts in via auth0.ssrUser=true', () => {
+    const getRouteRules = vi.fn().mockReturnValue({ auth0: { ssrUser: true } });
+    expect(shouldSkipSsrUserWrite(getRouteRules, { path: '/dashboard' })).toBe(false);
   });
 
   it('fails closed when route rules are unavailable', () => {
     const getRouteRules = vi.fn().mockReturnValue(undefined);
-    expect(isRequestSharedCacheable(getRouteRules, { path: '/dashboard' })).toBe(true);
+    expect(shouldSkipSsrUserWrite(getRouteRules, { path: '/dashboard' })).toBe(true);
   });
 
-  it('re-checks the lowercased path so a case-variant still matches the rule (CVE-2026-53721)', () => {
+  it('re-checks the lowercased path so a case-variant cannot bypass a cache rule (CVE-2026-53721)', () => {
     // Nitro's route-rule matcher is case-sensitive while vue-router matches case-insensitively,
     // so `/Cacheable` renders the `/cacheable` page yet an exact-path lookup finds no rule.
     // The decision consults the lowercased path too so the cache rule is still applied.
@@ -33,7 +44,15 @@ describe('isRequestSharedCacheable', () => {
       event.path === '/cacheable' ? { headers: { 'Cache-Control': 'public, s-maxage=900' } } : {}
     );
 
-    expect(isRequestSharedCacheable(getRouteRules, { path: '/Cacheable' })).toBe(true);
+    expect(shouldSkipSsrUserWrite(getRouteRules, { path: '/Cacheable' })).toBe(true);
+  });
+
+  it('re-checks the lowercased path so a case-variant cannot bypass the opt-out (CVE-2026-53721)', () => {
+    const getRouteRules = vi.fn((event: { path: string }) =>
+      event.path === '/opted-out' ? { auth0: { ssrUser: false } } : {}
+    );
+
+    expect(shouldSkipSsrUserWrite(getRouteRules, { path: '/Opted-Out' })).toBe(true);
   });
 
   it('queries the lowercased path with a fresh context so getRouteRules recomputes', () => {
@@ -41,7 +60,7 @@ describe('isRequestSharedCacheable', () => {
     const getRouteRules = vi.fn().mockReturnValue({});
     const event = { path: '/Cacheable', context: { _nitro: { routeRules: { cache: {} } } } };
 
-    isRequestSharedCacheable(getRouteRules, event);
+    shouldSkipSsrUserWrite(getRouteRules, event);
 
     expect(getRouteRules).toHaveBeenCalledTimes(2);
     const secondArg = getRouteRules.mock.calls[1][0];
@@ -51,7 +70,7 @@ describe('isRequestSharedCacheable', () => {
 
   it('does not perform a second lookup when the path is already lowercase', () => {
     const getRouteRules = vi.fn().mockReturnValue({});
-    isRequestSharedCacheable(getRouteRules, { path: '/cacheable' });
+    shouldSkipSsrUserWrite(getRouteRules, { path: '/cacheable' });
     expect(getRouteRules).toHaveBeenCalledTimes(1);
   });
 });

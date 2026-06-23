@@ -90,4 +90,18 @@ describe('SSR caching and the user in the payload', async () => {
     expect(html).not.toContain(EMAIL);
     expect(html).toContain('anonymous');
   });
+
+  it('does NOT server-render the user when the route opts out via auth0.ssrUser=false', async () => {
+    // `/opted-out` is NOT shared-cacheable (it is `no-store`), so the cache guard alone
+    // would server-render the user. It opts out explicitly with the
+    // `routeRules: { auth0: { ssrUser: false } }` rule, which the middleware reads. This
+    // gives consumers per-route (and, via `/**`, global) control over the SSR user write.
+    const html: string = await $fetch('/opted-out', {
+      headers: { cookie: await sessionCookie() },
+    });
+
+    expect(html).not.toContain(SUB);
+    expect(html).not.toContain(EMAIL);
+    expect(html).toContain('anonymous');
+  });
 });

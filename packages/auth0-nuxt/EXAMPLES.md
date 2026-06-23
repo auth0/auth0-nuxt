@@ -263,6 +263,36 @@ On such routes the SSR HTML stays anonymous (no user claims in the payload) and 
 
 If you disable route mounting (`mountRoutes: false`), mount the profile handler yourself at the configured `routes.profile` path so client-side hydration keeps working. You can also customize the path via the `routes.profile` option (see [Configuring the mounted routes](#configuring-the-mountes-routes)).
 
+### Opting routes out of the SSR user write
+
+The built-in guard only detects caching expressed through Nitro route rules. If a shared cache / CDN is configured **outside** your app — for example an edge rule that keys on path and applies its own TTL, without your app ever emitting `public`/`s-maxage` — the guard cannot detect it, and the user would be written into that route's SSR payload. Opt those routes out explicitly with the `auth0.ssrUser` route rule:
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  routeRules: {
+    // Per route (and glob patterns):
+    '/public/**': { auth0: { ssrUser: false } },
+    // Or disable the SSR user write for the whole app:
+    // '/**': { auth0: { ssrUser: false } },
+  },
+});
+```
+
+On a route with `auth0: { ssrUser: false }`, the middleware skips the SSR user write even when the route is not shared-cacheable, so the HTML stays anonymous and the user is hydrated client-side from the profile endpoint instead. This composes with the cache guard — either condition causes the write to be skipped — and is evaluated server-side, so it also covers routes that have no page component.
+
+> [!NOTE]  
+> The `auth0` route-rule key is read at runtime and needs no extra setup. If you type-check your `nuxt.config` and want the key typed, add the following to a `.d.ts` in your project:
+>
+> ```ts
+> declare module 'nitropack' {
+>   interface NitroRouteConfig {
+>     auth0?: { ssrUser?: boolean };
+>   }
+> }
+> export {};
+> ```
+
 
 ## Requesting an Access Token to call an API
 
