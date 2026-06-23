@@ -11,7 +11,7 @@ describe('auth.server middleware', async () => {
       ssr: true,
       runtimeConfig: {
         auth0: {
-          domain: '<domain>',
+          domain: 'example.auth0.local',
           clientId: '<client_id>',
           clientSecret: '<client_secret>',
           sessionSecret: '<secret>',
