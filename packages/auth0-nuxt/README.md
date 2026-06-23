@@ -207,7 +207,22 @@ A route is treated as shared-cacheable when its Nitro route rules set `cache`, `
 > [!IMPORTANT]  
 > A bare `Cache-Control: public, s-maxage` header is forwarded to your downstream CDN but is not part of Nitro's in-process cache. Without this behaviour, a shared cache keyed on path could serve one user's claims to another. The module fails closed: if route rules are unavailable, it keeps the SSR payload anonymous and hydrates on the client. See [`EXAMPLES.md`](./EXAMPLES.md#ssr-caching-and-the-authenticated-user) for details and local verification.
 
-The built-in guard detects caching expressed through Nitro route rules. If your responses are stored by a shared cache / CDN configured **outside** your app (for example an edge rule that keys on path and sets its own TTL, without your app emitting `public`/`s-maxage`), the guard cannot see it. For those routes — or to disable the SSR user write entirely — set the `auth0.ssrUser` route rule to `false`. The user is then hydrated client-side from the profile endpoint instead:
+> [!WARNING]  
+> The built-in guard is **best-effort**: it can only detect caching expressed through Nitro route rules. It does **not** see a `Cache-Control` header set imperatively (e.g. `setHeader(event, 'Cache-Control', 'public, …')` in a server route or middleware), nor a shared cache / CDN configured entirely outside your app (an edge rule that keys on path with its own TTL). On those routes the guard does not fire, and the authenticated user is written into cacheable SSR HTML.
+
+**If your app sits behind a shared cache / CDN, do not rely on the guard.** Disable the SSR user write globally and opt **in** only on the routes you know are never shared-cached. This is fail-safe by construction — no route serves the user in cacheable HTML unless you explicitly allow it. Route rules merge by specificity, so the more specific `ssrUser: true` wins:
+
+```ts
+// nuxt.config.ts — recommended posture behind a shared cache / CDN
+export default defineNuxtConfig({
+  routeRules: {
+    '/**':        { auth0: { ssrUser: false } }, // off everywhere by default
+    '/dashboard': { auth0: { ssrUser: true } },  // ...opt in where never shared-cached
+  },
+});
+```
+
+You can also use it the other way around — keep the default SSR user write and opt **out** of specific routes (or disable it entirely) with `auth0: { ssrUser: false }`:
 
 ```ts
 // nuxt.config.ts
@@ -215,18 +230,6 @@ export default defineNuxtConfig({
   routeRules: {
     '/public/**': { auth0: { ssrUser: false } }, // opt out per route (and patterns)
     // '/**': { auth0: { ssrUser: false } },      // or disable globally
-  },
-});
-```
-
-You can also invert it — disable the SSR user write globally and opt **in** on specific routes. Route rules are merged by specificity, so the more specific rule wins:
-
-```ts
-// nuxt.config.ts
-export default defineNuxtConfig({
-  routeRules: {
-    '/**':        { auth0: { ssrUser: false } }, // off everywhere by default
-    '/dashboard': { auth0: { ssrUser: true } },  // ...but on for this route
   },
 });
 ```
