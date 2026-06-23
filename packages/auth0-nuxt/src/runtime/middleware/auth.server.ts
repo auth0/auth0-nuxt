@@ -1,7 +1,7 @@
 import { defineNuxtRouteMiddleware, useNuxtApp } from '#imports';
 import { useUser } from '../composables/use-user';
-import { importMetaServer, importMetaDev } from '../helpers/import-meta';
-import { isSharedCacheable } from '../server/utils/is-shared-cacheable';
+import { importMetaDev } from '../helpers/import-meta';
+import { isRequestSharedCacheable } from '../server/utils/is-request-shared-cacheable';
 
 const warnedPaths = new Set<string>();
 
@@ -15,7 +15,14 @@ const warnedPaths = new Set<string>();
  * rules are unavailable, the SSR write is skipped and the client hydrates.
  */
 export default defineNuxtRouteMiddleware(async () => {
-  if (importMetaServer) {
+  // A literal `import.meta.server` guard (not the `importMetaServer` helper) is required
+  // here: Vite replaces `import.meta.server` with the literal `false` in the client bundle,
+  // so this whole block is tree-shaken away — crucially stripping the server-only
+  // `import('nitropack/runtime')` below, which resolves to Nitro virtual modules that
+  // cannot be loaded in the client environment and would otherwise break `nuxt build`. The
+  // branching cache-guard logic lives in `isRequestSharedCacheable` so it stays unit-testable
+  // (this body is unreachable under Vitest, where the same guard folds to `false`).
+  if (import.meta.server) {
     const app = useNuxtApp();
     const h3Event = app.ssrContext!.event;
 
@@ -23,29 +30,14 @@ export default defineNuxtRouteMiddleware(async () => {
     // `getRouteRules` server util. We deliberately do NOT use Nuxt's app-level
     // `getRouteRules` composable: it reads a build-time manifest that omits bare
     // `Cache-Control` *header* route rules, so it would not detect the shared-cacheable
-    // case this guard exists for. Imported dynamically (server-only) to keep it out of
-    // the client bundle; `isSharedCacheable` fails closed if it is unavailable.
+    // case this guard exists for.
     const { getRouteRules } = await import('nitropack/runtime');
 
-    // First check the rules for the request path as-is.
-    if (isSharedCacheable(getRouteRules(h3Event))) {
+    // Skip the SSR user write on shared-cacheable routes (hardened against the route-rule
+    // case-sensitivity bypass, CVE-2026-53721). Fails closed if route rules are unavailable.
+    if (isRequestSharedCacheable(getRouteRules, h3Event)) {
       maybeWarn(h3Event.path);
       return;
-    }
-
-    // Then re-check against the lowercased path. Nitro's route-rule matcher is
-    // case-sensitive, but vue-router matches routes case-insensitively, so a request like
-    // `/Cacheable` renders the `/cacheable` page while dodging its route rule
-    // (CVE-2026-53721). We resolve the rules for the lowercased path too — via a synthetic
-    // event with a fresh context so `getRouteRules` recomputes rather than returning the
-    // cached result — so the cache guard cannot be bypassed by casing.
-    const lowerPath = h3Event.path.toLowerCase();
-    if (lowerPath !== h3Event.path) {
-      const lowerEvent = { ...h3Event, path: lowerPath, context: {} } as typeof h3Event;
-      if (isSharedCacheable(getRouteRules(lowerEvent))) {
-        maybeWarn(h3Event.path);
-        return;
-      }
     }
 
     // As we can only import this composable on the server, we need to dynamically import it.
