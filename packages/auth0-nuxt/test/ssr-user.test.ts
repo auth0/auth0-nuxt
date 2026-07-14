@@ -5,16 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { encrypt } from './encryption';
 
 /**
- * End-to-end coverage for controlling the SSR user write.
- *
- * The authenticated user is carried in an encrypted, stateless session cookie, so
- * `getUser()` resolves entirely offline (no Auth0 network call) — only the session
- * secret and a syntactically valid domain are needed.
- *
- * We assert on the RAW server-rendered HTML (what a shared cache / CDN would store),
- * NOT on `window.__NUXT__` after client hydration: the client re-hydrates the user, so the
- * console object shows the user even when the SSR HTML is anonymous. A single fixture drives
- * both directions — on-by-default (with cache guard + opt-out) and off-by-default-with-opt-in.
+ * End-to-end coverage for controlling the SSR user write. Assertions are on the raw
+ * server-rendered HTML, not `window.__NUXT__` (the client re-hydrates the user after load).
  */
 describe('SSR user write', async () => {
   const SECRET = 'a-sufficiently-long-session-secret-value-1234567890';

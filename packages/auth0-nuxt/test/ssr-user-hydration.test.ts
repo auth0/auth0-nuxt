@@ -5,16 +5,9 @@ import { fileURLToPath } from 'node:url';
 import { encrypt } from './encryption';
 
 /**
- * Browser-level coverage for client-side user hydration.
- *
- * The `$fetch` e2e (`ssr-user.test.ts`) proves the *raw* SSR HTML of a shared-cacheable
- * route is anonymous. This test proves the other half: that despite that anonymous SSR HTML,
- * the `auth.client` plugin fetches `/auth/profile` after hydration and the auth-dependent UI
- * ends up reflecting the logged-in user. That loop can only be observed in a real browser
- * (it runs client JS), so it can't ride on `$fetch`.
- *
- * The user is carried in an encrypted, stateless session cookie, so `/auth/profile` resolves
- * `getUser()` entirely offline — no Auth0 network call, only the session secret is needed.
+ * Browser-level coverage: on a shared-cacheable route (anonymous SSR HTML), the `auth.client`
+ * plugin fetches `/auth/profile` after hydration and the UI reflects the logged-in user.
+ * Needs a real browser to run the client JS, so it can't ride on `$fetch`.
  */
 describe('SSR user client hydration', async () => {
   const SECRET = 'a-sufficiently-long-session-secret-value-1234567890';
