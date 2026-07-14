@@ -1,4 +1,4 @@
-import { defineNuxtRouteMiddleware, useNuxtApp } from '#imports';
+import { defineNuxtRouteMiddleware, useNuxtApp, useRuntimeConfig } from '#imports';
 import { useUser } from '../composables/use-user';
 import { importMetaDev } from '../helpers/import-meta';
 import { shouldSkipSsrUserWrite } from '../server/utils/should-skip-ssr-user-write';
@@ -37,10 +37,14 @@ export default defineNuxtRouteMiddleware(async () => {
     // case this guard exists for.
     const { getRouteRules } = await import('nitropack/runtime');
 
-    // Skip the SSR user write when the route opts out (`auth0: { ssrUser: false }`) or is
-    // shared-cacheable (hardened against the route-rule case-sensitivity bypass,
-    // CVE-2026-53721). Fails closed if route rules are unavailable.
-    if (shouldSkipSsrUserWrite(getRouteRules, h3Event)) {
+    // The module-level `ssrUser` default; a per-route `auth0.ssrUser` rule overrides it.
+    const globalSsrUser = (useRuntimeConfig().public.auth0 as { ssrUser?: boolean }).ssrUser !== false;
+
+    // Skip the SSR user write when the effective `ssrUser` opts out (global default or a
+    // per-route `auth0: { ssrUser: false }` rule) or the route is shared-cacheable (hardened
+    // against the route-rule case-sensitivity bypass, CVE-2026-53721). Fails closed if route
+    // rules are unavailable.
+    if (shouldSkipSsrUserWrite(getRouteRules, h3Event, globalSsrUser)) {
       maybeWarn(h3Event.path);
       return;
     }

@@ -39,6 +39,23 @@ export interface ModuleOptions {
    * If not provided, the SDK will use stateless sessions and store everything in the cookie.
    */
   sessionStoreFactoryPath?: string;
+
+  /**
+   * Whether to populate `useUser()` during server-side rendering (which Nuxt serializes
+   * into the `__NUXT__` payload of the SSR HTML).
+   *
+   * Set to `false` to skip the SSR user write for every route, keeping all server-rendered
+   * HTML anonymous; the user is hydrated client-side from the profile endpoint instead. This
+   * is the cache-mechanism-agnostic opt-out: unlike the automatic cache guard (which only
+   * detects route-rule-based caching), it protects routes made cacheable in ways the module
+   * cannot detect ahead of render (runtime headers, CDN-side config).
+   *
+   * A per-route `auth0: { ssrUser: … }` route rule overrides this default for that route,
+   * so you can opt out globally and opt specific routes back in. Note that `ssrUser: true`
+   * does not override the cache guard — shared-cacheable routes are always kept anonymous.
+   * @default true
+   */
+  ssrUser?: boolean;
 }
 
 /**
@@ -78,6 +95,9 @@ export default defineNuxtModule<ModuleOptions>({
     // Expose the routes in the public runtime config so that it can be accessed in both server and client contexts
     nuxt.options.runtimeConfig.public.auth0 = {
       routes,
+      // The module-level SSR user-write default; the middleware applies it when a route
+      // rule does not set its own `auth0.ssrUser`. Defaults to `true`.
+      ssrUser: options.ssrUser !== false,
     };
 
     addServerPlugin(resolver.resolve('./runtime/server/plugins/auth.server'));

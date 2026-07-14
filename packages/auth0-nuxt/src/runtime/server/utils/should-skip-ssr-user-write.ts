@@ -11,12 +11,18 @@ interface RequestLike {
 
 /**
  * Decides, for a given set of resolved route rules, whether the SSR user write must be
- * skipped: when the route opts out explicitly (`auth0: { ssrUser: false }`) or is
- * shared-cacheable. In both cases the SSR HTML stays anonymous and the user is hydrated
- * client-side by the `auth.client` plugin.
+ * skipped: when the effective `ssrUser` setting opts out or the route is shared-cacheable.
+ * In both cases the SSR HTML stays anonymous and the user is hydrated client-side by the
+ * `auth.client` plugin.
+ *
+ * The effective `ssrUser` is the per-route rule when set, otherwise the module-level
+ * `globalSsrUser` default. `ssrUser: false` skips the write unconditionally; `ssrUser: true`
+ * does NOT override the cache guard — a shared-cacheable route is always skipped, since
+ * writing the user there would leak it into cached HTML.
  */
-function shouldSkipForRules(routeRules: SkipRouteRules): boolean {
-  if (routeRules?.auth0?.ssrUser === false) {
+function shouldSkipForRules(routeRules: SkipRouteRules, globalSsrUser: boolean): boolean {
+  const ssrUser = routeRules?.auth0?.ssrUser ?? globalSsrUser;
+  if (ssrUser === false) {
     return true;
   }
   return isSharedCacheable(routeRules);
@@ -42,19 +48,22 @@ function shouldSkipForRules(routeRules: SkipRouteRules): boolean {
  *
  * @param getRouteRules Nitro's `getRouteRules` server util (injected for testability).
  * @param event The H3 request event (path + context).
+ * @param globalSsrUser The module-level `ssrUser` default, applied when a route rule does
+ *   not set its own `auth0.ssrUser`. Defaults to `true` (write the user during SSR).
  */
 export function shouldSkipSsrUserWrite<E extends RequestLike>(
   getRouteRules: (event: E) => SkipRouteRules,
-  event: E
+  event: E,
+  globalSsrUser: boolean = true
 ): boolean {
-  if (shouldSkipForRules(getRouteRules(event))) {
+  if (shouldSkipForRules(getRouteRules(event), globalSsrUser)) {
     return true;
   }
 
   const lowerPath = event.path.toLowerCase();
   if (lowerPath !== event.path) {
     const lowerEvent = { ...event, path: lowerPath, context: {} };
-    if (shouldSkipForRules(getRouteRules(lowerEvent))) {
+    if (shouldSkipForRules(getRouteRules(lowerEvent), globalSsrUser)) {
       return true;
     }
   }

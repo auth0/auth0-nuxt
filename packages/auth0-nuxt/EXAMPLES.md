@@ -272,22 +272,24 @@ The cache guard is **best-effort**. It can only see caching expressed through Ni
 
 On those routes the guard does not fire and the authenticated user is written into cacheable SSR HTML.
 
-**Recommended for apps behind a shared cache / CDN — disable globally, opt in per route.** This is fail-safe by construction: no route serves the user in cacheable HTML unless you explicitly allow it. Nitro merges route rules by specificity, so the more specific `ssrUser: true` wins:
+**Recommended for apps behind a shared cache / CDN — disable globally with the `ssrUser` module option, opt in per route.** This is fail-safe by construction: no route serves the user in cacheable HTML unless you explicitly allow it. The module option needs no route rule, so it also covers the caching the guard cannot detect (imperative headers, CDN-side config). A per-route `auth0: { ssrUser: … }` rule overrides the module default for that route:
 
 ```ts
 // nuxt.config.ts
 export default defineNuxtConfig({
+  auth0: {
+    ssrUser: false, // off everywhere by default (no route rule needed)
+  },
   routeRules: {
-    '/**':        { auth0: { ssrUser: false } }, // off everywhere by default
-    '/dashboard': { auth0: { ssrUser: true } },  // ...opt in only where never shared-cached
+    '/dashboard': { auth0: { ssrUser: true } }, // ...opt in only where never shared-cached
   },
 });
 ```
 
 > [!NOTE]  
-> `ssrUser: true` re-enables the write only where the cache guard also permits it — it overrides a broader `ssrUser: false` (e.g. on `/**`), but it **cannot** force the user into shared-cacheable HTML. If a route is shared-cacheable, the write is skipped regardless of `ssrUser: true`, and the user is hydrated client-side.
+> `ssrUser: true` re-enables the write only where the cache guard also permits it — it overrides a broader `ssrUser: false` (the module option or a `/**` rule), but it **cannot** force the user into shared-cacheable HTML. If a route is shared-cacheable, the write is skipped regardless of `ssrUser: true`, and the user is hydrated client-side.
 
-Alternatively, keep the default SSR user write and opt **out** of specific routes (or disable it entirely) with `auth0: { ssrUser: false }`:
+Alternatively, keep the default SSR user write and opt **out** of specific routes with the `auth0: { ssrUser: false }` route rule:
 
 ```ts
 // nuxt.config.ts

@@ -36,6 +36,31 @@ describe('shouldSkipSsrUserWrite', () => {
     expect(shouldSkipSsrUserWrite(getRouteRules, { path: '/dashboard' })).toBe(true);
   });
 
+  it('skips the write when the global option opts out (no route rule needed)', () => {
+    const getRouteRules = vi.fn().mockReturnValue({});
+    expect(shouldSkipSsrUserWrite(getRouteRules, { path: '/dashboard' }, false)).toBe(true);
+  });
+
+  it('lets a per-route opt-in override a global opt-out', () => {
+    const getRouteRules = vi.fn().mockReturnValue({ auth0: { ssrUser: true } });
+    expect(shouldSkipSsrUserWrite(getRouteRules, { path: '/dashboard' }, false)).toBe(false);
+  });
+
+  it('lets a per-route opt-out apply even when the global default opts in', () => {
+    const getRouteRules = vi.fn().mockReturnValue({ auth0: { ssrUser: false } });
+    expect(shouldSkipSsrUserWrite(getRouteRules, { path: '/opted-out' }, true)).toBe(true);
+  });
+
+  it('still skips a shared-cacheable route when the global option opts in (guard is not overridable)', () => {
+    const getRouteRules = vi.fn().mockReturnValue({ headers: { 'Cache-Control': 'public, s-maxage=900' } });
+    expect(shouldSkipSsrUserWrite(getRouteRules, { path: '/cacheable' }, true)).toBe(true);
+  });
+
+  it('writes the user when both the global option and route opt in and the route is not cacheable', () => {
+    const getRouteRules = vi.fn().mockReturnValue({});
+    expect(shouldSkipSsrUserWrite(getRouteRules, { path: '/dashboard' }, true)).toBe(false);
+  });
+
   it('re-checks the lowercased path so a case-variant still matches a cache rule (CVE-2026-53721)', () => {
     // Nitro's route-rule matcher is case-sensitive while vue-router matches case-insensitively,
     // so `/Cacheable` renders the `/cacheable` page yet an exact-path lookup finds no rule.

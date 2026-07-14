@@ -210,20 +210,22 @@ A route is treated as shared-cacheable when its Nitro route rules set `cache`, `
 > [!WARNING]  
 > The built-in guard is **best-effort**: it can only detect caching expressed through Nitro route rules. It does **not** see a `Cache-Control` header set imperatively (e.g. `setHeader(event, 'Cache-Control', 'public, …')` in a server route or middleware), nor a shared cache / CDN configured entirely outside your app (an edge rule that keys on path with its own TTL). On those routes the guard does not fire, and the authenticated user is written into cacheable SSR HTML.
 
-**If your app sits behind a shared cache / CDN, do not rely on the guard.** Disable the SSR user write globally and opt **in** only on the routes you know are never shared-cached. This is fail-safe by construction — no route serves the user in cacheable HTML unless you explicitly allow it. Route rules merge by specificity, so the more specific `ssrUser: true` wins:
+**If your app sits behind a shared cache / CDN, do not rely on the guard.** Disable the SSR user write globally with the `ssrUser` module option, and opt **in** only on the routes you know are never shared-cached. This is fail-safe by construction — no route serves the user in cacheable HTML unless you explicitly allow it. The module option is the cache-mechanism-agnostic switch: it needs no route rule, so it also covers caching the guard cannot detect (imperative headers, CDN-side config):
 
 ```ts
 // nuxt.config.ts — recommended posture behind a shared cache / CDN
 export default defineNuxtConfig({
+  auth0: {
+    ssrUser: false, // off everywhere by default (no route rule needed)
+  },
   routeRules: {
-    '/**':        { auth0: { ssrUser: false } }, // off everywhere by default
-    '/dashboard': { auth0: { ssrUser: true } },  // ...opt in where never shared-cached
+    '/dashboard': { auth0: { ssrUser: true } }, // ...opt in where never shared-cached
   },
 });
 ```
 
 > [!NOTE]  
-> `ssrUser: true` re-enables the write only where the cache guard also permits it — it overrides a broader `ssrUser: false` (e.g. on `/**`), but it **cannot** force the user into shared-cacheable HTML. If a route is shared-cacheable, the write is skipped regardless of `ssrUser: true`, and the user is hydrated client-side.
+> A per-route `auth0: { ssrUser: … }` route rule overrides the `ssrUser` module option for that route, so you can disable globally and opt specific routes back in. `ssrUser: true` re-enables the write only where the cache guard also permits it — it **cannot** force the user into shared-cacheable HTML. If a route is shared-cacheable, the write is skipped regardless of `ssrUser: true`, and the user is hydrated client-side.
 
 You can also use it the other way around — keep the default SSR user write and opt **out** of specific routes (or disable it entirely) with `auth0: { ssrUser: false }`:
 

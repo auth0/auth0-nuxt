@@ -142,7 +142,15 @@ describe('Auth0 Nuxt Module', () => {
 
     expect(mockNuxt.options.runtimeConfig.public.auth0).toEqual({
       routes: expectedRoutes,
+      ssrUser: true,
     });
+  });
+
+  it('exposes ssrUser: false in public runtime config when opted out globally', async () => {
+    // @ts-expect-error: module is a function
+    await auth0Module.setup({ ssrUser: false }, mockNuxt);
+
+    expect((mockNuxt.options.runtimeConfig.public.auth0 as { ssrUser: boolean }).ssrUser).toBe(false);
   });
 
   it('should set up default session store alias when no path is provided', async () => {
