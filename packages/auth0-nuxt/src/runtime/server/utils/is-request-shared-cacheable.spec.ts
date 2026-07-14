@@ -25,10 +25,10 @@ describe('isRequestSharedCacheable', () => {
     expect(isRequestSharedCacheable(getRouteRules, { path: '/dashboard' })).toBe(true);
   });
 
-  it('re-checks the lowercased path so a case-variant cannot bypass the rule (CVE-2026-53721)', () => {
+  it('re-checks the lowercased path so a case-variant still matches the rule (CVE-2026-53721)', () => {
     // Nitro's route-rule matcher is case-sensitive while vue-router matches case-insensitively,
-    // so `/Cacheable` renders the `/cacheable` page yet dodges its rule on an exact-path lookup.
-    // The decision must consult the lowercased path too.
+    // so `/Cacheable` renders the `/cacheable` page yet an exact-path lookup finds no rule.
+    // The decision consults the lowercased path too so the cache rule is still applied.
     const getRouteRules = vi.fn((event: { path: string }) =>
       event.path === '/cacheable' ? { headers: { 'Cache-Control': 'public, s-maxage=900' } } : {}
     );
