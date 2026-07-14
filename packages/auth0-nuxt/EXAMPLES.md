@@ -284,6 +284,9 @@ export default defineNuxtConfig({
 });
 ```
 
+> [!NOTE]  
+> `ssrUser: true` re-enables the write only where the cache guard also permits it — it overrides a broader `ssrUser: false` (e.g. on `/**`), but it **cannot** force the user into shared-cacheable HTML. If a route is shared-cacheable, the write is skipped regardless of `ssrUser: true`, and the user is hydrated client-side.
+
 Alternatively, keep the default SSR user write and opt **out** of specific routes (or disable it entirely) with `auth0: { ssrUser: false }`:
 
 ```ts
