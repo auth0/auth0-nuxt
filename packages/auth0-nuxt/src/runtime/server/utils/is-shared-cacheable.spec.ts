@@ -30,12 +30,35 @@ describe('isSharedCacheable', () => {
     expect(isSharedCacheable({ headers: { 'CACHE-CONTROL': 'public' } } as never)).toBe(true);
   });
 
-  it('returns false for private max-age only', () => {
-    expect(isSharedCacheable({ headers: { 'Cache-Control': 'max-age=600' } } as never)).toBe(false);
+  it('returns true for a positive max-age with no private directive', () => {
+    // A shared cache may store a cookie-authenticated response with a bare max-age:
+    // RFC 9111's authenticated-response restriction covers only the Authorization header.
+    expect(isSharedCacheable({ headers: { 'Cache-Control': 'max-age=600' } } as never)).toBe(true);
+  });
+
+  it('returns false for max-age=0', () => {
+    expect(isSharedCacheable({ headers: { 'Cache-Control': 'max-age=0' } } as never)).toBe(false);
+  });
+
+  it('returns false for private, max-age (explicit opt-out wins over max-age)', () => {
+    expect(isSharedCacheable({ headers: { 'Cache-Control': 'private, max-age=600' } } as never)).toBe(false);
+  });
+
+  it('returns true for private, s-maxage (shared-cache signal wins over private)', () => {
+    // Some CDNs honor s-maxage regardless of private; err toward keeping the payload anonymous.
+    expect(isSharedCacheable({ headers: { 'Cache-Control': 'private, s-maxage=900' } } as never)).toBe(true);
+  });
+
+  it('returns false for private on its own', () => {
+    expect(isSharedCacheable({ headers: { 'Cache-Control': 'private' } } as never)).toBe(false);
   });
 
   it('returns false for no-store', () => {
     expect(isSharedCacheable({ headers: { 'Cache-Control': 'no-store' } } as never)).toBe(false);
+  });
+
+  it('returns false for no-store, max-age', () => {
+    expect(isSharedCacheable({ headers: { 'Cache-Control': 'no-store, max-age=600' } } as never)).toBe(false);
   });
 
   it('returns false for empty route rules', () => {
