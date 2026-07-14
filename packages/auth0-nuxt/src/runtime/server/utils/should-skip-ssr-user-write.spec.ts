@@ -36,7 +36,7 @@ describe('shouldSkipSsrUserWrite', () => {
     expect(shouldSkipSsrUserWrite(getRouteRules, { path: '/dashboard' })).toBe(true);
   });
 
-  it('re-checks the lowercased path so a case-variant cannot bypass a cache rule (CVE-2026-53721)', () => {
+  it('re-checks the lowercased path so a case-variant still matches a cache rule (CVE-2026-53721)', () => {
     // Nitro's route-rule matcher is case-sensitive while vue-router matches case-insensitively,
     // so `/Cacheable` renders the `/cacheable` page yet an exact-path lookup finds no rule.
     // The decision consults the lowercased path too so the cache rule is still applied.
@@ -47,7 +47,7 @@ describe('shouldSkipSsrUserWrite', () => {
     expect(shouldSkipSsrUserWrite(getRouteRules, { path: '/Cacheable' })).toBe(true);
   });
 
-  it('re-checks the lowercased path so a case-variant cannot bypass the opt-out (CVE-2026-53721)', () => {
+  it('re-checks the lowercased path so a case-variant still matches the opt-out (CVE-2026-53721)', () => {
     const getRouteRules = vi.fn((event: { path: string }) =>
       event.path === '/opted-out' ? { auth0: { ssrUser: false } } : {}
     );

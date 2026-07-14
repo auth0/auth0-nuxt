@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { encrypt } from './encryption';
 
 /**
- * End-to-end coverage for controlling the SSR user write (#52).
+ * End-to-end coverage for controlling the SSR user write.
  *
  * The authenticated user is carried in an encrypted, stateless session cookie, so
  * `getUser()` resolves entirely offline (no Auth0 network call) — only the session
@@ -16,10 +16,10 @@ import { encrypt } from './encryption';
  * console object shows the user even when the SSR HTML is anonymous. A single fixture drives
  * both directions — on-by-default (with cache guard + opt-out) and off-by-default-with-opt-in.
  */
-describe('SSR user write (#52)', async () => {
+describe('SSR user write', async () => {
   const SECRET = 'a-sufficiently-long-session-secret-value-1234567890';
-  const SUB = 'auth0|pii-victim-123';
-  const EMAIL = 'victim@example.com';
+  const SUB = 'auth0|user-123';
+  const EMAIL = 'user@example.com';
 
   await setup({
     rootDir: fileURLToPath(new URL('./fixtures/ssr-user', import.meta.url)),
@@ -54,27 +54,26 @@ describe('SSR user write (#52)', async () => {
   }
 
   describe('on by default (cache guard + opt-out)', () => {
-    it('embeds the user in the raw SSR HTML on a NON-cacheable route (the leak surface)', async () => {
+    it('server-renders the user into the raw SSR HTML on a NON-cacheable route', async () => {
       const html: string = await $fetch('/private', {
         headers: { cookie: await sessionCookie() },
       });
 
-      // On a private (no-store) route the user IS server-rendered — this is correct,
-      // because the response is never stored by a shared cache. It also demonstrates
-      // exactly what used to be baked into EVERY route's payload before the fix.
+      // On a private (no-store) route the user IS server-rendered, so authenticated
+      // content is present in the initial HTML without waiting for client hydration.
       expect(html).toContain(SUB);
       expect(html).toContain(EMAIL);
     });
 
-    it('does NOT embed the user in the raw SSR HTML on a shared-cacheable route (the fix)', async () => {
+    it('does NOT server-render the user into the raw SSR HTML on a shared-cacheable route', async () => {
       const html: string = await $fetch('/cacheable', {
         headers: { cookie: await sessionCookie() },
       });
 
-      // The shared-cacheable route's HTML is what a CDN would store and serve to other
-      // visitors. It must be anonymous: the user's claims must not appear anywhere in the
-      // raw payload. (The `auth0_user` useState *key* is still present in __NUXT_DATA__,
-      // but serialized as a null reference — the claims themselves are absent.)
+      // A shared-cacheable route's HTML may be reused across visitors, so it stays
+      // anonymous: the user's claims must not appear anywhere in the raw payload. (The
+      // `auth0_user` useState *key* is still present in __NUXT_DATA__, but serialized as a
+      // null reference — the claims themselves are absent.) The user is hydrated client-side.
       expect(html).not.toContain(SUB);
       expect(html).not.toContain(EMAIL);
       // The page still renders, just logged-out at SSR time.

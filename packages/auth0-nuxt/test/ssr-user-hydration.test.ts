@@ -5,21 +5,21 @@ import { fileURLToPath } from 'node:url';
 import { encrypt } from './encryption';
 
 /**
- * Browser-level coverage for client-side user hydration (#52).
+ * Browser-level coverage for client-side user hydration.
  *
  * The `$fetch` e2e (`ssr-user.test.ts`) proves the *raw* SSR HTML of a shared-cacheable
- * route is anonymous — the leak surface a CDN would store. This test proves the other half:
- * that despite that anonymous SSR HTML, the `auth.client` plugin fetches `/auth/profile`
- * after hydration and the auth-dependent UI ends up reflecting the logged-in user. That loop
- * can only be observed in a real browser (it runs client JS), so it can't ride on `$fetch`.
+ * route is anonymous. This test proves the other half: that despite that anonymous SSR HTML,
+ * the `auth.client` plugin fetches `/auth/profile` after hydration and the auth-dependent UI
+ * ends up reflecting the logged-in user. That loop can only be observed in a real browser
+ * (it runs client JS), so it can't ride on `$fetch`.
  *
  * The user is carried in an encrypted, stateless session cookie, so `/auth/profile` resolves
  * `getUser()` entirely offline — no Auth0 network call, only the session secret is needed.
  */
-describe('SSR user client hydration (#52)', async () => {
+describe('SSR user client hydration', async () => {
   const SECRET = 'a-sufficiently-long-session-secret-value-1234567890';
-  const SUB = 'auth0|pii-victim-123';
-  const EMAIL = 'victim@example.com';
+  const SUB = 'auth0|user-123';
+  const EMAIL = 'user@example.com';
 
   await setup({
     rootDir: fileURLToPath(new URL('./fixtures/ssr-user', import.meta.url)),
