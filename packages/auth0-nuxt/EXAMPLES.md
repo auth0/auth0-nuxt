@@ -64,12 +64,13 @@ NUXT_AUTH0_SESSION_SECRET=<YOUR_LONG_RANDOM_SECRET>
 ```
 
 ### Configuring the mountes routes
-The SDK for Nuxt Web Applications mounts 4 main routes:
+The SDK for Nuxt Web Applications mounts 5 main routes:
 
 1. `/auth/login`: the login route that the user will be redirected to to initiate an authentication transaction.
 2. `/auth/logout`: the logout route that must be added to your Auth0 application's Allowed Logout URLs
 3. `/auth/callback`: the callback route that must be added to your Auth0 application's Allowed Callback URLs
 4. `/auth/backchannel-logout`: the route that will receive a `logout_token` when a configured [Back-Channel Logout](https://auth0.com/docs/authenticate/login/logout/back-channel-logout) initiator occurs
+5. `/auth/profile`: returns the user's claims as JSON with `Cache-Control: no-store`
 
 
 To disable this behavior, you can set the `mountRoutes` option to `false` when registering the module (it's true by default):
@@ -87,6 +88,7 @@ modules: [['@auth0/auth0-nuxt', {
     logout: '/custom-auth/logout',
     callback: '/custom-auth/callback',
     backchannelLogout: '/custom-auth/backchannel-logout',
+    profile: '/custom-auth/profile',
   }
 }]]
 ```
@@ -238,6 +240,39 @@ export default defineEventHandler(async (event) => {
 > [!IMPORTANT]  
 > The above examples are both to protect routes by the means of a session, and not API routes using a bearer token. 
 
+## Controlling the SSR user write
+
+`useUser()` is backed by `useState`, which Nuxt serializes into the `__NUXT__` payload of server-rendered HTML. If that HTML is served from a shared cache, one visitor's claims can be delivered to another.
+
+**This SDK cannot detect how your responses are cached.** If you serve authenticated routes from a shared cache, you must opt those routes out yourself. **The default is `ssrUser: true`, so a cached authenticated route with no `ssrUser: false` rule leaks.**
+
+Opt out per route with a route rule:
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  routeRules: {
+    '/blog/**': { swr: 3600, auth0: { ssrUser: false } },
+  },
+});
+```
+
+Or set the default for every route and opt individual routes back in:
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  auth0: { ssrUser: false },
+  routeRules: {
+    '/account': { auth0: { ssrUser: true } },
+  },
+});
+```
+
+A route rule always wins over the module option. Opted-out routes render anonymous HTML and hydrate `useUser()` in the browser from `/auth/profile`, which is served `Cache-Control: no-store`.
+
+> [!IMPORTANT]
+> **Do not protect an opted-out route with route middleware that checks `useUser()`.** On an opted-out route there is deliberately no user during SSR, so such middleware sees an empty session even for a signed-in user and redirects to `/auth/login`; Auth0 returns them to the same route, which renders anonymous again, and the redirect loops. Use server middleware that reads the session from the H3 event instead. `ssrUser: false` removes the user from the rendered payload, not from the session.
 
 ## Requesting an Access Token to call an API
 

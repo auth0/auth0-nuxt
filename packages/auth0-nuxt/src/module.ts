@@ -6,6 +6,8 @@ import {
   addRouteMiddleware,
   addImportsDir,
   addServerImportsDir,
+  addPlugin,
+  extendRouteRules,
   resolvePath,
 } from '@nuxt/kit';
 import type { RouteConfig } from './types';
@@ -27,9 +29,29 @@ export interface ModuleOptions {
   /**
    * The route URLs to use for the Auth0 module.
    * You can override the default routes by providing your own configuration.
-   * @default { login: '/auth/login', callback: '/auth/callback', logout: '/auth/logout', backchannelLogout: '/auth/backchannel-logout' }
+   * @default { login: '/auth/login', callback: '/auth/callback', logout: '/auth/logout', backchannelLogout: '/auth/backchannel-logout', profile: '/auth/profile' }
    */
   routes?: RouteConfig;
+
+  /**
+   * Whether to populate `useUser()` during server-side rendering, which Nuxt serializes into
+   * the `__NUXT__` payload of the rendered HTML.
+   *
+   * Set to `false` to keep every server-rendered page anonymous; the user is hydrated
+   * client-side from the profile endpoint instead. A per-route `auth0: { ssrUser: … }` route
+   * rule overrides this default, so you can opt out globally and opt individual routes back in.
+   *
+   * This SDK cannot detect how your responses are cached — `Cache-Control` set at request
+   * time and CDN-side configuration are both invisible to it — so if you serve authenticated
+   * routes from a shared cache, opt those routes out yourself.
+   *
+   * Note that an opted-out route cannot be protected by route middleware that checks
+   * `useUser()`: there is no user during SSR, so such middleware would redirect a signed-in
+   * user to the login route and Auth0 would return them to the same route, looping. Protect
+   * these routes with server middleware reading the session from the H3 event instead.
+   * @default true
+   */
+  ssrUser?: boolean;
 
   /**
    * Path to a custom session store factory.
@@ -66,6 +88,7 @@ export default defineNuxtModule<ModuleOptions>({
       callback: '/auth/callback',
       logout: '/auth/logout',
       backchannelLogout: '/auth/backchannel-logout',
+      profile: '/auth/profile',
     };
 
     const routes: Required<RouteConfig> = {
@@ -76,11 +99,16 @@ export default defineNuxtModule<ModuleOptions>({
     // Expose the routes in the public runtime config so that it can be accessed in both server and client contexts
     nuxt.options.runtimeConfig.public.auth0 = {
       routes,
+      // The module-level SSR user-write default. The `auth.server` Nitro plugin applies it
+      // when a route rule does not set its own `auth0.ssrUser`.
+      ssrUser: options.ssrUser !== false,
     };
 
     addServerPlugin(resolver.resolve('./runtime/server/plugins/auth.server'));
 
     addRouteMiddleware({ name: 'auth0', path: resolver.resolve('./runtime/middleware/auth.server'), global: true });
+
+    addPlugin(resolver.resolve('./runtime/plugins/auth.client'));
 
     if (options?.mountRoutes !== false) {
       addServerHandler({
@@ -106,6 +134,21 @@ export default defineNuxtModule<ModuleOptions>({
         route: routes.backchannelLogout,
         method: 'post',
       });
+
+      addServerHandler({
+        handler: resolver.resolve('./runtime/server/api/auth/profile.get'),
+        route: routes.profile,
+        method: 'get',
+      });
+
+      // The profile endpoint returns the current user's claims, so it must never be cached.
+      // Its own `Cache-Control: no-store` is not enough: Nitro wraps any handler whose route
+      // rules carry `cache` in `cachedEventHandler`, which keys entries by path only (the
+      // session cookie is not part of the key) and overwrites the handler's `cache-control`
+      // with its own. A broad rule such as `'/**': { swr: 60 }` would therefore serve one
+      // user's claims to the next. `cache: false` on this exact path wins over any wildcard
+      // rule, because Nitro merges matches from least to most specific.
+      extendRouteRules(routes.profile, { cache: false }, { override: true });
     }
 
     addImportsDir(resolver.resolve('./runtime/composables'));

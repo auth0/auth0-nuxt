@@ -147,4 +147,12 @@ export interface RouteConfig {
    * @example '/auth/backchannel-logout'
    */
   backchannelLogout?: string;
+
+  /**
+   * The URL for the profile route, which returns the authenticated user's claims as JSON
+   * with `Cache-Control: no-store`. The `auth.client` plugin fetches this to hydrate
+   * `useUser()` when server-side rendering did not populate it.
+   * @example '/auth/profile'
+   */
+  profile?: string;
 }

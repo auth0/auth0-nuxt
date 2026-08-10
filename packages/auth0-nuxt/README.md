@@ -62,12 +62,13 @@ The `APP_BASE_URL` is the URL that your application is running on. When developi
 
 #### Routes
 
-The SDK for Nuxt Web Applications mounts 4 main routes:
+The SDK for Nuxt Web Applications mounts 5 main routes:
 
 1. `/auth/login`: the login route that the user will be redirected to to initiate an authentication transaction. Supports adding a `returnTo` querystring parameter to return to a specific URL after login.
 2. `/auth/logout`: the logout route that must be added to your Auth0 application's Allowed Logout URLs
 3. `/auth/callback`: the callback route that must be added to your Auth0 application's Allowed Callback URLs
 4. `/auth/backchannel-logout`: the route that will receive a `logout_token` when a configured [Back-Channel Logout](https://auth0.com/docs/authenticate/login/logout/back-channel-logout) initiator occurs
+5. `/auth/profile`: returns the current user's claims to the browser, served `Cache-Control: no-store`. This is what populates `useUser()` on routes that opt out of the SSR user write (see [section 5](#5-controlling-the-ssr-user-write)).
 
 
 To disable this behavior, you can set the `mountRoutes` option to `false` when registering the module (it's true by default):
@@ -85,6 +86,7 @@ modules: [['@auth0/auth0-nuxt', {
     logout: '/custom-auth/logout',
     callback: '/custom-auth/callback',
     backchannelLogout: '/custom-auth/backchannel-logout',
+    profile: '/custom-auth/profile',
   }
 }]]
 ```
@@ -197,8 +199,65 @@ export default defineEventHandler(async (event) => {
 > [!IMPORTANT]  
 > The above examples are both to protect routes by the means of a session, and not API routes using a bearer token. 
 
+### 5. Controlling the SSR user write
 
-### 5. Requesting an Access Token to call an API
+`useUser()` is backed by `useState`, which Nuxt serializes into the `__NUXT__` payload of server-rendered HTML. If that HTML is served from a shared cache, one visitor's claims can be delivered to another.
+
+**This SDK cannot detect how your responses are cached.** `Cache-Control` set at request time with `setHeader`, and caching configured at your CDN (Vercel, Cloudflare, Fastly, CloudFront, `Netlify-CDN-Cache-Control`) are both invisible to it. If you serve authenticated routes from a shared cache, you must opt those routes out yourself. **The default is `ssrUser: true`, so a cached authenticated route with no `ssrUser: false` rule leaks.** The default is `true` to stay non-breaking.
+
+Opt out per route with a route rule:
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  routeRules: {
+    '/blog/**': { swr: 3600, auth0: { ssrUser: false } },
+  },
+});
+```
+
+Or set the default for every route and opt individual routes back in:
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  auth0: { ssrUser: false },
+  routeRules: {
+    '/account': { auth0: { ssrUser: true } },
+  },
+});
+```
+
+A route rule always wins over the module option, which wins over the built-in default of `true`. Opted-out routes render anonymous HTML and hydrate `useUser()` in the browser from `/auth/profile`, which is served `Cache-Control: no-store`.
+
+> [!IMPORTANT]
+> **Do not protect an opted-out route with the `useUser()` route middleware from [section 4.1](#41-route-middlware).** On an opted-out route there is deliberately no user during SSR, so that middleware sees `session.value` as empty even for a signed-in user and redirects to `/auth/login`. Auth0 then returns them to the same route, which renders anonymous again — an infinite redirect loop.
+>
+> Protect these routes with the server middleware from [section 4.2](#42-server-middleware) instead. It reads the session from the H3 event, which is unaffected by `ssrUser`. The distinction is that `ssrUser: false` removes the user from the *rendered payload*, not from the session.
+
+Nuxt does not pull a module's types into your `nuxt.config`'s type program, so for autocomplete on the `auth0` route-rule key, add this to a `.d.ts` in your project:
+
+```ts
+declare module 'nitropack' {
+  interface NitroRouteConfig {
+    auth0?: { ssrUser?: boolean };
+  }
+}
+
+declare module 'nitropack/types' {
+  interface NitroRouteConfig {
+    auth0?: { ssrUser?: boolean };
+  }
+}
+
+export {};
+```
+
+The rule is read at runtime whether or not it is typed.
+
+If you set `mountRoutes: false`, mount the profile handler yourself alongside the other routes; otherwise client hydration has nothing to fetch and opted-out routes stay anonymous.
+
+### 6. Requesting an Access Token to call an API
 
 If you need to call an API on behalf of the user, you want to specify the `audience` parameter when registering the plugin. This will make the SDK request an access token for the specified audience when the user logs in.
 
