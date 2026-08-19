@@ -14,6 +14,9 @@ export default defineEventHandler(async (event) => {
   setHeader(event, 'Cache-Control', 'no-store');
   setHeader(event, 'Vary', 'Cookie');
 
+  // No try/catch, unlike the sibling handlers: `null` means signed out, so a session-read
+  // failure has to 500 rather than be mistaken for one.
+
   const auth0Client = useAuth0(event);
   const user = await auth0Client.getUser();
 

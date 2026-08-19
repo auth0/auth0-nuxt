@@ -110,6 +110,13 @@ export default defineNuxtModule<ModuleOptions>({
 
     addPlugin(resolver.resolve('./runtime/plugins/auth.client'));
 
+    // Nitro's handler cache keys by path and ignores the session cookie, so a broad rule like
+    // `'/**': { swr: 60 }` would serve one user's claims to the next. The endpoint's own
+    // `no-store` does not save us: Nitro overwrites it. Kept outside the `mountRoutes` guard
+    // because Nitro reads this from the route a handler is registered at, so an app mounting
+    // the handler itself needs the rule too (and its own, if it picks a different path).
+    extendRouteRules(routes.profile, { cache: false }, { override: true });
+
     if (options?.mountRoutes !== false) {
       addServerHandler({
         handler: resolver.resolve('./runtime/server/api/auth/login.get'),
@@ -140,15 +147,6 @@ export default defineNuxtModule<ModuleOptions>({
         route: routes.profile,
         method: 'get',
       });
-
-      // The profile endpoint returns the current user's claims, so it must never be cached.
-      // Its own `Cache-Control: no-store` is not enough: Nitro wraps any handler whose route
-      // rules carry `cache` in `cachedEventHandler`, which keys entries by path only (the
-      // session cookie is not part of the key) and overwrites the handler's `cache-control`
-      // with its own. A broad rule such as `'/**': { swr: 60 }` would therefore serve one
-      // user's claims to the next. `cache: false` on this exact path wins over any wildcard
-      // rule, because Nitro merges matches from least to most specific.
-      extendRouteRules(routes.profile, { cache: false }, { override: true });
     }
 
     addImportsDir(resolver.resolve('./runtime/composables'));

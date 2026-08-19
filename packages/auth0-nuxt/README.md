@@ -255,7 +255,18 @@ export {};
 
 The rule is read at runtime whether or not it is typed.
 
-If you set `mountRoutes: false`, mount the profile handler yourself alongside the other routes; otherwise client hydration has nothing to fetch and opted-out routes stay anonymous.
+Client hydration runs once at app init, not on every navigation: where SSR wrote the user the plugin is a no-op, and where it did not, the fetched user carries across later navigations. So `ssrUser: false` controls what lands in the cached HTML, not whether the user is visible in the running app.
+
+If you set `mountRoutes: false`, mount the profile handler yourself, otherwise hydration has nothing to fetch and opted-out routes stay anonymous.
+
+> [!WARNING]
+> If you mount it at a path of your own, add a rule for that path:
+>
+> ```ts
+> routeRules: { '/your/profile/path': { cache: false } }
+> ```
+>
+> Nitro's handler cache is keyed by path without the session cookie, so a wildcard like `'/**': { swr: 60 }` would serve one user's claims to the next. The SDK already sets this for its own profile path.
 
 ### 6. Requesting an Access Token to call an API
 

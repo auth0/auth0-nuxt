@@ -23,6 +23,10 @@ export interface RequestLike {
  * that bypass. It uses a synthetic event with a fresh `context` because Nitro's
  * `getRouteRules` memoizes its result onto `event.context._nitro.routeRules`.
  *
+ * Both lookups must agree to write the user, so if `/Blog` sets `ssrUser: true` while `/blog`
+ * sets `ssrUser: false`, the opt-out wins. That is the safe direction: where two rules
+ * disagree across case variants, keep the user out of the payload.
+ *
  * `getRouteRules` is injected rather than imported so this stays unit-testable without a
  * Nitro runtime.
  *

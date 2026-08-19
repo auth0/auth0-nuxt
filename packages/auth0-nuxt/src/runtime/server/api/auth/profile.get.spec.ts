@@ -53,4 +53,11 @@ describe('profile.get handler', () => {
     const result = await profileHandler(mockEvent);
     expect(result).toBeNull();
   });
+
+  it('propagates a session-read failure instead of reporting nobody is signed in', async () => {
+    // The failure must not surface as `null`: the client cannot tell that apart from an
+    // anonymous caller, and would cache the wrong conclusion for the rest of the session.
+    mockAuth0Client.getUser.mockRejectedValue(new Error('session store unavailable'));
+    await expect(profileHandler(mockEvent)).rejects.toThrow('session store unavailable');
+  });
 });

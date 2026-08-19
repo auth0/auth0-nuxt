@@ -274,6 +274,19 @@ A route rule always wins over the module option. Opted-out routes render anonymo
 > [!IMPORTANT]
 > **Do not protect an opted-out route with route middleware that checks `useUser()`.** On an opted-out route there is deliberately no user during SSR, so such middleware sees an empty session even for a signed-in user and redirects to `/auth/login`; Auth0 returns them to the same route, which renders anonymous again, and the redirect loops. Use server middleware that reads the session from the H3 event instead. `ssrUser: false` removes the user from the rendered payload, not from the session.
 
+Client hydration runs once at app init, not on every navigation: where SSR wrote the user the plugin is a no-op, and where it did not, the fetched user carries across later navigations.
+
+If you set `mountRoutes: false`, mount the profile handler yourself, otherwise hydration has nothing to fetch and opted-out routes stay anonymous.
+
+> [!WARNING]
+> If you mount it at a path of your own, add a rule for that path:
+>
+> ```ts
+> routeRules: { '/your/profile/path': { cache: false } }
+> ```
+>
+> Nitro's handler cache is keyed by path without the session cookie, so a wildcard like `'/**': { swr: 60 }` would serve one user's claims to the next. The SDK already sets this for its own profile path.
+
 ## Requesting an Access Token to call an API
 
 If you need to call an API on behalf of the user, you want to specify the `audience` parameter when registering the runtime configuration for the auth0 module. This will make the SDK request an access token for the specified audience when the user logs in.
