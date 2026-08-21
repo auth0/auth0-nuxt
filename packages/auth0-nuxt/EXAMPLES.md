@@ -2,6 +2,7 @@
 
 - [Configuration](#configuration)
   - [Basic configuration](#basic-configuration)
+  - [Dynamic Application Base URL](#dynamic-application-base-url)
   - [Configuring the mountes routes](#configuring-the-mountes-routes)
   - [Configuring Stateful Sessions](#configuring-stateful-sessions)
   - [Customizing State and Transaction Identifiers](#customizing-state-and-transaction-identifiers)
@@ -62,6 +63,31 @@ NUXT_AUTH0_CLIENT_SECRET=<AUTH0_CLIENT_SECRET>
 NUXT_AUTH0_APP_BASE_URL=http://localhost:3000
 NUXT_AUTH0_SESSION_SECRET=<YOUR_LONG_RANDOM_SECRET>
 ```
+
+### Dynamic Application Base URL
+
+`appBaseUrl` supports serving multiple origins from a single Auth0 application. It can be configured in three ways:
+
+- **Static** — a single URL string (the default). Use this when your app is served from one origin:
+
+  ```
+  NUXT_AUTH0_APP_BASE_URL=https://app.example.com
+  ```
+
+- **Allow-list** — a comma-separated list of origins. On each request the SDK matches the incoming origin against the list and uses the matching entry for the callback `redirect_uri`, the post-login redirect, and logout. This is the recommended approach for production multi-origin setups:
+
+  ```
+  NUXT_AUTH0_APP_BASE_URL=https://app1.example.com,https://app2.example.com
+  ```
+
+- **Dynamic** — omit `appBaseUrl` entirely. The base URL is inferred from each request's host, honoring the `x-forwarded-host` / `x-forwarded-proto` headers set by proxies and CDNs, and falling back to the `Host` header.
+
+Regardless of the mode, every origin must be registered in your Auth0 application's **Allowed Callback URLs** and **Allowed Logout URLs** — this remains the primary safeguard.
+
+> [!IMPORTANT]
+> In dynamic and allow-list modes, secure session cookies are enforced when `NODE_ENV=production`. Explicitly setting `sessionConfiguration.cookie.secure = false` in that mode throws an `InvalidConfigurationError`.
+
+See the [`example-nuxt-web-dynamic-app-base-url`](../../examples/example-nuxt-web-dynamic-app-base-url) example for a runnable two-host setup.
 
 ### Configuring the mountes routes
 The SDK for Nuxt Web Applications mounts 4 main routes:

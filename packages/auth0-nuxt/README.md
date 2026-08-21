@@ -51,7 +51,7 @@ The `SESSION_SECRET` is the key used to encrypt the session cookie. You can gene
 openssl rand -hex 64
 ```
 
-The `APP_BASE_URL` is the URL that your application is running on. When developing locally, this is most commonly http://localhost:3000.
+The `APP_BASE_URL` is the URL that your application is running on. When developing locally, this is most commonly http://localhost:3000. It may also be a comma-separated allow-list of origins, or omitted to infer the origin per request — see [Dynamic Application Base URL](https://github.com/auth0/auth0-nuxt/blob/main/packages/auth0-nuxt/EXAMPLES.md#dynamic-application-base-url) for serving multiple origins from a single Auth0 application.
 
 
 > [!IMPORTANT]  

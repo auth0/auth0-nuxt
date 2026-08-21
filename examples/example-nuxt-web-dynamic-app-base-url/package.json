@@ -1,0 +1,24 @@
+{
+  "name": "example-nuxt-web-dynamic-app-base-url",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "start": "npm run dev"
+  },
+  "dependencies": {
+    "@auth0/auth0-nuxt": "*",
+    "nuxt": "^3.16.2",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
+  },
+  "devDependencies": {
+    "@nuxt/devtools": "^3.2.3",
+    "@nuxt/eslint-config": "^1.15.2",
+    "eslint": "^9.20.1",
+    "typescript": "~5.9.3"
+  }
+}

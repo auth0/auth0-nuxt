@@ -78,12 +78,20 @@ export interface Auth0ClientOptions {
   clientSecret: string;
 
   /**
-   * The base URL of your application.
-   * This is the URL where your application is hosted.
-   * It is used to construct redirect URIs for authentication flows.
+   * The base URL of your application, used to construct redirect URIs for
+   * authentication flows. Supports three modes:
+   *
+   * - A single URL string (static): `'https://app.example.com'`.
+   * - An array of URLs (allow-list): the request origin is matched against the
+   *   list. Recommended when serving multiple origins from one Auth0 app.
+   * - Omitted (dynamic): the base URL is inferred from the incoming request
+   *   host on each request.
+   *
+   * A comma-separated string (e.g. via `NUXT_AUTH0_APP_BASE_URL`) is parsed into
+   * an allow-list array.
    * @example 'http://localhost:3000'
    */
-  appBaseUrl: string;
+  appBaseUrl?: string | string[];
 
   /**
    * The secret used to sign session cookies.

@@ -26,6 +26,7 @@ describe('logout.get handler', () => {
         appBaseUrl: 'http://localhost:3000',
       },
     },
+    node: { req: { headers: { host: 'localhost:3000' }, socket: {} } },
   } as unknown as H3Event;
 
   beforeEach(() => {
@@ -44,5 +45,16 @@ describe('logout.get handler', () => {
     await logoutHandler(mockEvent);
 
     expect(sendRedirectMock).toHaveBeenCalledWith(mockEvent, 'http://external/logout');
+  });
+
+  it('resolves returnTo dynamically from the request host', async () => {
+    const dynamicEvent = {
+      context: { auth0ClientOptions: { appBaseUrl: undefined } },
+      node: { req: { headers: { host: 'app2.localhost:3000' }, socket: {} } },
+    } as unknown as H3Event;
+
+    await logoutHandler(dynamicEvent);
+
+    expect(mockAuth0Client.logout).toHaveBeenCalledWith({ returnTo: 'http://app2.localhost:3000' });
   });
 });

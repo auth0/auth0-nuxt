@@ -12,6 +12,7 @@ import type { RouteConfig } from './types';
 
 export * from './types';
 export type { SessionConfiguration, SessionCookieOptions, StateData } from '@auth0/auth0-server-js';
+export { InvalidConfigurationError } from '@auth0/auth0-server-js';
 
 /**
  * Module options for the Auth0 Nuxt module.
