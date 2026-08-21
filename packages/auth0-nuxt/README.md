@@ -148,7 +148,7 @@ With those in place, you will be able to call `auth/login` and `auth/logout` to 
 
 ### 4. Protecting Routes
 
-#### 4.1 Route Middlware
+#### 4.1 Route Middleware
 
 In order to protect a Nuxt route, you can use the SDK's `useUser()` composable method in a custom route middleware. This will check if there is a user and redirect them to the login page if not:
 
@@ -231,7 +231,7 @@ export default defineNuxtConfig({
 A route rule always wins over the module option, which wins over the built-in default of `true`. Opted-out routes render anonymous HTML and hydrate `useUser()` in the browser from `/auth/profile`, which is served `Cache-Control: no-store`.
 
 > [!IMPORTANT]
-> **Do not protect an opted-out route with the `useUser()` route middleware from [section 4.1](#41-route-middlware).** On an opted-out route there is deliberately no user during SSR, so that middleware sees `session.value` as empty even for a signed-in user and redirects to `/auth/login`. Auth0 then returns them to the same route, which renders anonymous again — an infinite redirect loop.
+> **Do not protect an opted-out route with the `useUser()` route middleware from [section 4.1](#41-route-middleware).** On an opted-out route there is deliberately no user during SSR, so that middleware sees `session.value` as empty even for a signed-in user and redirects to `/auth/login`. Auth0 then returns them to the same route, which renders anonymous again — an infinite redirect loop.
 >
 > Protect these routes with the server middleware from [section 4.2](#42-server-middleware) instead. It reads the session from the H3 event, which is unaffected by `ssrUser`. The distinction is that `ssrUser: false` removes the user from the *rendered payload*, not from the session.
 
