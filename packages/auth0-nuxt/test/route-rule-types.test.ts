@@ -32,9 +32,13 @@ const tsc = require.resolve('typescript/bin/tsc');
 
 /** The `nuxt` package a directory resolves, which is the one nuxi would run from there. */
 const resolveNuxt = (from: string) => {
-  const dir = dirname(createRequire(join(from, 'package.json')).resolve('nuxt/package.json'));
-  const { version } = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')) as { version: string };
-  return { dir, version };
+  const manifest = createRequire(join(from, 'package.json')).resolve('nuxt/package.json');
+  const parsed: unknown = JSON.parse(readFileSync(manifest, 'utf8'));
+  const version = parsed !== null && typeof parsed === 'object' && 'version' in parsed ? parsed.version : undefined;
+  if (typeof version !== 'string') {
+    throw new Error(`${manifest} has no string "version" field, so the Nuxt major cannot be checked`);
+  }
+  return { dir: dirname(manifest), version };
 };
 
 /**
