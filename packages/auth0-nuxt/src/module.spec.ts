@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   addServerHandler,
+  addTypeTemplate,
   addServerPlugin,
   addRouteMiddleware,
   addImportsDir,
@@ -27,6 +28,7 @@ vi.mock('@nuxt/kit', async () => {
     addImportsDir: vi.fn(),
     addServerImportsDir: vi.fn(),
     addPlugin: vi.fn(),
+    addTypeTemplate: vi.fn(),
     extendRouteRules: vi.fn(),
     resolvePath: vi.fn((path) => Promise.resolve(`resolved/user/${path}`)),
   };
@@ -66,6 +68,42 @@ describe('Auth0 Nuxt Module', () => {
     expect(addPlugin).toHaveBeenCalledWith('resolved/runtime/plugins/auth.client');
     expect(addImportsDir).toHaveBeenCalledWith('resolved/runtime/composables');
     expect(addServerImportsDir).toHaveBeenCalledWith('resolved/runtime/server/composables');
+  });
+
+  // This proves the module asks kit for the right template. `@nuxt/kit` is mocked here, so what
+  // Nuxt then does with it is covered end to end in `test/route-rule-types.test.ts`, which runs
+  // `nuxt prepare` on a consumer fixture for each supported major and typechecks the result.
+  it('should register the route-rule types with Nuxt so consumers do not declare them', async () => {
+    // @ts-expect-error: module is a function
+    await auth0Module.setup({}, mockNuxt);
+
+    expect(addTypeTemplate).toHaveBeenCalledWith(
+      expect.objectContaining({ filename: 'types/auth0-route-rules.d.ts' }),
+      // `node` is not optional: `.nuxt/tsconfig.node.json` is the project that compiles
+      // `nuxt.config.*`, so without it the key is still an excess property where it is
+      // written. `nitro` carries it to the server program, where `getRouteRules` is read.
+      { nuxt: true, node: true, nitro: true }
+    );
+  });
+
+  it('should declare the auth0 key on both nitro route-rule interfaces', async () => {
+    // @ts-expect-error: module is a function
+    await auth0Module.setup({}, mockNuxt);
+
+    expect(addTypeTemplate).toHaveBeenCalledTimes(1);
+
+    const call = vi.mocked(addTypeTemplate).mock.calls[0];
+    if (!call) {
+      throw new Error('addTypeTemplate was not called, so there is no template to inspect');
+    }
+
+    // @ts-expect-error: getContents is called by Nuxt with template data we do not need here
+    const contents = call[0].getContents({});
+
+    expect(contents).toContain("declare module 'nitropack/types'");
+    expect(contents).toContain('interface NitroRouteRules extends Auth0NitroRules {}');
+    expect(contents).toContain('interface NitroRouteConfig extends Auth0NitroRules {}');
+    expect(contents).toContain('auth0?: { ssrUser?: boolean };');
   });
 
   it('should not mount routes if mountRoutes is false', async () => {
