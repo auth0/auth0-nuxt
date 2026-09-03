@@ -257,7 +257,7 @@ The rule is read at runtime whether or not it is typed.
 
 Client hydration runs once at app init, not on every navigation: where SSR wrote the user the plugin is a no-op, and where it did not, the fetched user carries across later navigations. So `ssrUser: false` controls what lands in the cached HTML, not whether the user is visible in the running app.
 
-If you set `mountRoutes: false`, mount the profile handler yourself, otherwise hydration has nothing to fetch and opted-out routes stay anonymous.
+`mountRoutes: false` does not stop this request: the client still fetches the profile path, and nothing the module owns answers there. Mount the profile handler yourself, or whatever does answer (a 404, or the HTML of a catch-all page) carries no claims, the plugin ignores it, and opted-out routes stay anonymous. To make no request at all, set `hydrateUser: false`.
 
 > [!WARNING]
 > If you mount it at a path of your own, add a rule for that path:
