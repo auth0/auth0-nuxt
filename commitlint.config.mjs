@@ -3,7 +3,8 @@ const Configuration = {
     // Ship's release commits use "Release <tag>", which isn't conventional.
     ignores: [(message) => /^Release /.test(message)],
     rules: {
-        'scope-enum': [2, 'always', ['auth0-nuxt']],
+        // 'release' allows ship's conventional PR title: chore(release): <tag>.
+        'scope-enum': [2, 'always', ['auth0-nuxt', 'release']],
     }
 };
 
