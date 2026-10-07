@@ -87,6 +87,8 @@ const fixtures = [
 describe.each(fixtures)('route-rule type declaration on Nuxt $major', ({ major, name, setup, configProject, configReferences }) => {
   const fixture = join(fileURLToPath(new URL('./fixtures', import.meta.url)), name);
   const nuxtDir = join(fixture, '.nuxt');
+  /** The generated declaration, relative to the fixture as tsc prints it in diagnostics. */
+  const declaration = '.nuxt/types/auth0-route-rules.d.ts';
 
   /**
    * Compiles one generated project and asserts that `file`, relative to the fixture, is part
@@ -114,7 +116,10 @@ describe.each(fixtures)('route-rule type declaration on Nuxt $major', ({ major, 
     const files = lines.filter((line) => isAbsolute(line)).map((line) => resolve(line));
     expect(files, `${file} should be in the ${project} program`).toContain(resolve(fixture, file));
 
-    expect(lines.filter((line) => line.startsWith(`${file}(`))).toEqual([]);
+    // The generated declaration counts too. `skipLibCheck` skips type errors in a `.d.ts` but
+    // not syntax errors, and one there need not surface as an error in `file`.
+    const checked = [file, declaration];
+    expect(lines.filter((line) => checked.some((path) => line.startsWith(`${path}(`)))).toEqual([]);
   };
 
   beforeAll(async () => {
@@ -135,10 +140,9 @@ describe.each(fixtures)('route-rule type declaration on Nuxt $major', ({ major, 
   }, 180_000);
 
   it('writes the declaration into the app and references it for both type programs', () => {
-    const declaration = join(nuxtDir, 'types', 'auth0-route-rules.d.ts');
-    expect(existsSync(declaration)).toBe(true);
+    expect(existsSync(join(fixture, declaration))).toBe(true);
 
-    const contents = readFileSync(declaration, 'utf8');
+    const contents = readFileSync(join(fixture, declaration), 'utf8');
     expect(contents).toContain("declare module 'nitropack/types'");
 
     // Assert the references explicitly rather than relying on the compiles below to notice:
