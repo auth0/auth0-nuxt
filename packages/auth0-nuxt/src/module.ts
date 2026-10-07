@@ -21,10 +21,23 @@ export type { SessionConfiguration, SessionCookieOptions, StateData } from '@aut
 export interface ModuleOptions {
   /**
    * Mount the Auth0 routes in the Nuxt server.
-   * If set to false, you will need to manually mount the routes in your Nuxt server.
+   * If set to false, you will need to manually mount the routes in your Nuxt server. That
+   * includes the profile route: the client still fetches it to hydrate `useUser()` unless
+   * `hydrateUser` is `false`.
    * @default true
    */
   mountRoutes?: boolean;
+
+  /**
+   * Whether to hydrate `useUser()` in the browser by fetching the profile route once the app
+   * has mounted, on pages where server-side rendering did not write the user.
+   *
+   * Set to `false` when nothing serves the profile route, for example `mountRoutes: false`
+   * without a handler of your own, so no request is made. With it off, routes that opt out of
+   * `ssrUser` stay anonymous in the browser.
+   * @default true
+   */
+  hydrateUser?: boolean;
 
   /**
    * The route URLs to use for the Auth0 module.
@@ -108,7 +121,9 @@ export default defineNuxtModule<ModuleOptions>({
 
     addRouteMiddleware({ name: 'auth0', path: resolver.resolve('./runtime/middleware/auth.server'), global: true });
 
-    addPlugin(resolver.resolve('./runtime/plugins/auth.client'));
+    if (options.hydrateUser !== false) {
+      addPlugin(resolver.resolve('./runtime/plugins/auth.client'));
+    }
 
     // Nitro's handler cache keys by path and ignores the session cookie, so a broad rule like
     // `'/**': { swr: 60 }` would serve one user's claims to the next. The endpoint's own

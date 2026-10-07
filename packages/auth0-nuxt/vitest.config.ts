@@ -17,6 +17,11 @@ export default defineVitestConfig({
       },
     },
   ],
+  // Nuxt compiles `import.meta.dev` to `false` for the test build. Unit specs cover dev-only
+  // warnings, so turn it back on here; the e2e fixtures build separately and are unaffected.
+  define: {
+    'import.meta.dev': 'true',
+  },
   test: {
     environment: 'nuxt',
   },

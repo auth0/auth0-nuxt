@@ -68,6 +68,17 @@ describe('Auth0 Nuxt Module', () => {
     expect(addServerImportsDir).toHaveBeenCalledWith('resolved/runtime/server/composables');
   });
 
+  it('should not register the client hydration plugin when hydrateUser is false', async () => {
+    // Wiring only. That the browser then makes no profile request is covered against a real
+    // build in test/unmounted-profile-opt-out.test.ts.
+    // @ts-expect-error: module is a function
+    await auth0Module.setup({ hydrateUser: false }, mockNuxt);
+
+    expect(addPlugin).not.toHaveBeenCalledWith('resolved/runtime/plugins/auth.client');
+    // Only the browser-side fetch is opted out; the server side is untouched.
+    expect(addServerPlugin).toHaveBeenCalledWith('resolved/runtime/server/plugins/auth.server');
+  });
+
   it('should not mount routes if mountRoutes is false', async () => {
     // Test with mountRoutes: false
     // @ts-expect-error: module is a function
