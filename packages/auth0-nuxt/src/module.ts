@@ -83,6 +83,9 @@ export interface ModuleOptions {
  * It lives at module scope because a template literal preserves its own indentation: nesting
  * it inside `setup` would indent every line of the generated file.
  *
+ * Only `NitroRouteConfig` is augmented. `NitroRouteRules`, which `getRouteRules` returns,
+ * extends `Omit<NitroRouteConfig, …>` and so picks up the key without a declaration of its own.
+ *
  * Not `String.raw`: the backticks in the JSDoc below have to stay escaped or they would end
  * the template, and raw mode would emit the backslashes instead of consuming them.
  */
@@ -98,7 +101,6 @@ interface Auth0NitroRules {
 }
 
 declare module 'nitropack/types' {
-  interface NitroRouteRules extends Auth0NitroRules {}
   interface NitroRouteConfig extends Auth0NitroRules {}
 }
 

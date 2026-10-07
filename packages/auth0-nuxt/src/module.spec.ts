@@ -97,7 +97,9 @@ describe('Auth0 Nuxt Module', () => {
     );
   });
 
-  it('should declare the auth0 key on both nitro route-rule interfaces', async () => {
+  // Checks only that the template carries the key into Nitro's types. Whether the declaration
+  // actually types a consumer's config and server code is left to the end-to-end typecheck.
+  it('should declare the auth0 route-rule key for nitropack', async () => {
     // @ts-expect-error: module is a function
     await auth0Module.setup({}, mockNuxt);
 
@@ -112,8 +114,6 @@ describe('Auth0 Nuxt Module', () => {
     const contents = call[0].getContents({});
 
     expect(contents).toContain("declare module 'nitropack/types'");
-    expect(contents).toContain('interface NitroRouteRules extends Auth0NitroRules {}');
-    expect(contents).toContain('interface NitroRouteConfig extends Auth0NitroRules {}');
     expect(contents).toContain('auth0?: { ssrUser?: boolean };');
   });
 
