@@ -1,0 +1,5 @@
+{
+  "conventionalCommits": true,
+  "packagePath": "packages/auth0-nuxt",
+  "packageLabel": "auth0-nuxt"
+}
