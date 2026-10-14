@@ -1,0 +1,10 @@
+# Common Pitfalls
+
+- **Server-only vs. client.** `useAuth0()` throws if called on the client (it checks `importMetaClient`). Auth logic that touches secrets, cookies, or the `ServerClient` belongs in `runtime/server/` (`.server` files, `server/api`, `server/composables`). `useUser()` is the client-facing composable. Don't move server-only code into a client composable.
+- **`useAuth0(event)` needs an H3 event.** It caches the client on `event.context.auth0Client` and rebuilds the Nuxt wrapper each call because the event context can change. Calling it without a valid `H3Event` throws — pass the event from the handler, never a stale/shared one.
+- **Config is validated at boot, not per call.** The Nitro plugin (`auth.server.ts`) throws if `domain`, `clientId`, `clientSecret`, `appBaseUrl`, or `sessionSecret` are missing. Runtime config is populated from `runtimeConfig.auth0`, overridden by `NUXT_AUTH0_*` env vars — a missing env var surfaces as a boot-time error, not a request error.
+- **Route mounting is opt-outable.** Routes only mount when `mountRoutes !== false`, and their paths come from the merged `routes` config. Code that assumes `/auth/login` etc. always exist will break when a consumer customizes `routes` or sets `mountRoutes: false`.
+- **Cookies go through `NuxtCookieHandler`.** It requires `storeOptions.event` and throws otherwise. Adding cookie access via raw H3 calls bypasses the consistent secure/httpOnly handling.
+- **Monorepo build order.** Turborepo builds dependencies first (`^build`). The example apps depend on the built SDK, so run `npm run build` at the root before running or building an example (as the README instructs).
+- **`returnTo` must be sanitized.** Any redirect derived from user input has to pass `toSafeRedirect()` (same-origin as `appBaseUrl`) — the login handler already does this; new redirects must too.
+- **The `Auth0-Client` telemetry header is not wired here.** It's handled by the underlying `@auth0/auth0-server-js` client. Don't hand-roll a telemetry header or a separate HTTP client in this repo.
