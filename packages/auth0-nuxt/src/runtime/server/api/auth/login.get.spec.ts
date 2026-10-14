@@ -50,6 +50,7 @@ describe('login.get handler', () => {
 
     expect(mockAuth0Client.startInteractiveLogin).toHaveBeenCalledWith({
       appState: { returnTo: 'http://localhost:3000/foo' },
+      authorizationParams: undefined,
     });
   });
 
@@ -60,6 +61,66 @@ describe('login.get handler', () => {
 
     expect(mockAuth0Client.startInteractiveLogin).toHaveBeenCalledWith({
       appState: { returnTo: undefined },
+      authorizationParams: undefined,
+    });
+  });
+
+  it('should forward additional query params as authorizationParams', async () => {
+    getQueryMock.mockReturnValue({
+      returnTo: 'http://localhost:3000/foo',
+      organization: 'org_123',
+      login_hint: 'user@example.com',
+    });
+
+    await loginHandler(mockEvent);
+
+    expect(mockAuth0Client.startInteractiveLogin).toHaveBeenCalledWith({
+      appState: { returnTo: 'http://localhost:3000/foo' },
+      authorizationParams: {
+        organization: 'org_123',
+        login_hint: 'user@example.com',
+      },
+    });
+  });
+
+  it('should not forward returnTo or reserved OAuth params as authorizationParams', async () => {
+    getQueryMock.mockReturnValue({
+      returnTo: 'http://localhost:3000/foo',
+      scope: 'openid evil',
+      audience: 'https://evil',
+      redirect_uri: 'https://evil',
+      client_id: 'evil',
+      state: 'evil',
+      nonce: 'evil',
+      response_type: 'evil',
+      code_challenge: 'evil',
+      code_challenge_method: 'evil',
+      organization: 'org_123',
+    });
+
+    await loginHandler(mockEvent);
+
+    expect(mockAuth0Client.startInteractiveLogin).toHaveBeenCalledWith({
+      appState: { returnTo: 'http://localhost:3000/foo' },
+      authorizationParams: {
+        organization: 'org_123',
+      },
+    });
+  });
+
+  it('should not forward prototype-polluting keys as authorizationParams', async () => {
+    getQueryMock.mockReturnValue({
+      returnTo: 'http://localhost:3000/foo',
+      __proto__: 'evil',
+      constructor: 'evil',
+      prototype: 'evil',
+    });
+
+    await loginHandler(mockEvent);
+
+    expect(mockAuth0Client.startInteractiveLogin).toHaveBeenCalledWith({
+      appState: { returnTo: 'http://localhost:3000/foo' },
+      authorizationParams: undefined,
     });
   });
 
