@@ -16,6 +16,10 @@ const MAX_BODY_BYTES = 32 * 1024;
 const MAX_FIELD_LENGTH = 8192;
 /** Auth0 rejects a one-time code longer than this. */
 const MAX_CODE_LENGTH = 10;
+/** The client extension results that are passed on. The browser returns only the extensions the start options asked for. */
+const EXTENSION_RESULTS = ['appid', 'credProps', 'largeBlob', 'prf'];
+/** Levels of arrays and objects in an extension result. `prf` is the deepest: `{ results: { first } }`. */
+const MAX_EXTENSION_DEPTH = 4;
 
 export interface CompleteInput {
   credential: PasskeyCredentialResponse;
@@ -138,9 +142,34 @@ function readCredential(value: unknown): PasskeyCredentialResponse {
   const attachment = text(credential.authenticatorAttachment, 'credential.authenticatorAttachment', 1, 32);
   if (attachment !== undefined) result.authenticatorAttachment = attachment;
   if (credential.clientExtensionResults !== undefined) {
-    result.clientExtensionResults = object(credential.clientExtensionResults, 'credential.clientExtensionResults');
+    result.clientExtensionResults = readExtensionResults(credential.clientExtensionResults);
   }
   return result;
+}
+
+/**
+ * Only the extension results in EXTENSION_RESULTS, each at most MAX_EXTENSION_DEPTH levels deep. The SDK turns the credential
+ * into JSON for Auth0, and `JSON.stringify` throws on a value that is nested a few thousand levels deep, which fits in the
+ * 32 KiB of a body.
+ */
+function readExtensionResults(value: unknown): Json {
+  const results = object(value, 'credential.clientExtensionResults');
+
+  const result: Json = {};
+  for (const name of EXTENSION_RESULTS) {
+    if (results[name] === undefined) continue;
+    if (!isShallow(results[name], MAX_EXTENSION_DEPTH)) {
+      throw invalid(`credential.clientExtensionResults.${name} is nested too deeply.`);
+    }
+    result[name] = results[name];
+  }
+  return result;
+}
+
+/** Whether `value` has at most `depth` levels of arrays and objects. It stops at the limit, so a deep value costs no stack. */
+function isShallow(value: unknown, depth: number): boolean {
+  if (typeof value !== 'object' || value === null) return true;
+  return depth > 0 && Object.values(value).every((item) => isShallow(item, depth - 1));
 }
 
 function readVerification(value: unknown): PasskeyVerificationCodes | undefined {

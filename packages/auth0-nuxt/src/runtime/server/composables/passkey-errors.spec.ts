@@ -4,11 +4,13 @@ import * as sdk from '@auth0/auth0-server-js';
 import * as passkeyErrors from './passkey-errors';
 
 describe('passkey-errors', () => {
-  it('PE1: exports exactly the seven names the docs and the example use', () => {
+  it('PE1: exports exactly the nine names the docs and the example use', () => {
     // Adding or removing a name is a conscious change: it widens or narrows what apps can use without an import.
     expect(Object.keys(passkeyErrors).sort()).toEqual([
+      'InvalidConfigurationError',
       'MissingRequiredArgumentError',
       'MissingTransactionError',
+      'OrganizationValidationError',
       'PasskeyChallengeError',
       'PasskeyGetTokenError',
       'PasskeyRegisterError',

@@ -87,7 +87,8 @@ describe('passkeys example: HTTP flows', async () => {
       expect(cookie).toMatch(/HttpOnly/i);
       expect(cookie).toMatch(/SameSite=Lax/i);
       expect(cookie).toMatch(/Path=\//);
-      expect(cookie).toMatch(/Max-Age=60(;|$)/);
+      // The SDK rounds the expiry down to a second and the Max-Age up, so it is 59 when the second rolls over in between.
+      expect(cookie).toMatch(/Max-Age=(59|60)(;|$)/);
 
       const flow = await readFlow(user);
       expect(flow.authSession).toMatch(/^AS-\d+$/);
@@ -120,7 +121,7 @@ describe('passkeys example: HTTP flows', async () => {
       });
 
       expect(res.json.verificationRequired).toEqual(['email', 'phone']);
-      expect(res.setCookie.find((value) => value.startsWith(`${FLOW_COOKIE}=`))).toMatch(/Max-Age=900(;|$)/);
+      expect(res.setCookie.find((value) => value.startsWith(`${FLOW_COOKIE}=`))).toMatch(/Max-Age=(899|900)(;|$)/);
     });
 
     it('A4: complete after a signup exchanges the credential, creates the session and clears the flow', async () => {
@@ -920,6 +921,63 @@ describe('passkeys example: HTTP flows', async () => {
         expect(sent.verification).toEqual({ email: EMAIL_CODE });
         expect(sent.audience).toBe('https://api.example.local');
         expect(String(sent.scope)).not.toContain('admin');
+      });
+
+      it('D6: the extension results the app knows are sent to Auth0 as they are', async () => {
+        const user = newUser();
+        const { credential } = await startSignup(user);
+        const clientExtensionResults = {
+          appid: false,
+          credProps: { rk: true },
+          largeBlob: { supported: true },
+          prf: { enabled: true, results: { first: {} } }, // an ArrayBuffer is `{}` in JSON
+        };
+
+        const res = await complete(user, { credential: { ...credential, clientExtensionResults } });
+
+        expect(res.json).toEqual({ status: 'complete' });
+        const [token] = await requestsTo('/oauth/token');
+        expect((token?.body as { authn_response: PasskeyCredentialResponse }).authn_response).toEqual({
+          ...credential,
+          clientExtensionResults,
+        });
+      });
+
+      it('D6: other extension results are dropped, also when they are nested very deeply', async () => {
+        const user = newUser();
+        const { credential } = await startSignup(user);
+        // `JSON.stringify` of 15,000 nested arrays overflows the stack, and the body is still under 32 KiB.
+        const deep = '['.repeat(15_000) + ']'.repeat(15_000);
+        const rawBody = JSON.stringify({
+          credential: {
+            ...credential,
+            clientExtensionResults: { credProps: { rk: true }, hmacCreateSecret: true, deep: 'DEEP' },
+          },
+        }).replace('"DEEP"', deep);
+        expect(rawBody.length).toBeLessThan(32 * 1024);
+
+        const res = await app.call(user, '/api/passkey/complete', { rawBody });
+
+        expect(res.json).toEqual({ status: 'complete' });
+        const [token] = await requestsTo('/oauth/token');
+        const sent = token?.body as { authn_response: PasskeyCredentialResponse };
+        expect(sent.authn_response.clientExtensionResults).toEqual({ credProps: { rk: true } });
+      });
+
+      it('D6: an extension result nested too deeply is answered with 400 `invalid` (not a 500), and Auth0 is not called', async () => {
+        const user = newUser();
+        const { credential } = await startSignup(user);
+        const deep = '['.repeat(15_000) + ']'.repeat(15_000);
+        const rawBody = JSON.stringify({
+          credential: { ...credential, clientExtensionResults: { credProps: 'DEEP' } },
+        }).replace('"DEEP"', deep);
+        expect(rawBody.length).toBeLessThan(32 * 1024);
+
+        const res = await app.call(user, '/api/passkey/complete', { rawBody });
+
+        expect(res.status).toBe(400);
+        expect(res.json.status).toBe('invalid');
+        expect(await requestsTo('/oauth/token')).toHaveLength(0);
       });
 
       it.each([

@@ -1,7 +1,8 @@
 // An in-process fixed-window rate limiter for the passkey routes.
 //
 // It counts in this process only. With several instances, limit at the edge (a WAF or your proxy) or use a shared
-// store, because each instance counts on its own. The keys come from the client, so the map is capped.
+// store, because each instance counts on its own. The keys come from the client, so the map is capped: it holds at most
+// MAX_KEYS clients, and a new client past that makes the oldest one forgotten, so that client may start over early.
 
 const MAX_KEYS = 10_000;
 
@@ -25,9 +26,9 @@ export function rateLimit(key: string, limit: number, windowSeconds = 60): RateL
   let counter = counters.get(key);
 
   if (!counter || counter.resetAt <= now) {
-    if (!counter && counters.size >= MAX_KEYS) {
-      makeRoom(now);
-    }
+    // A new window goes to the end of the map, so that the first key of the map is always the oldest window.
+    counters.delete(key);
+    if (counters.size >= MAX_KEYS) forgetOldest();
     counter = { count: 0, resetAt: now + windowSeconds * 1000 };
     counters.set(key, counter);
   }
@@ -39,12 +40,13 @@ export function rateLimit(key: string, limit: number, windowSeconds = 60): RateL
   };
 }
 
-/** Drops the expired windows. If the map is still full, the keys are a flood: start over (see the README). */
-function makeRoom(now: number): void {
-  for (const [key, counter] of counters) {
-    if (counter.resetAt <= now) counters.delete(key);
-  }
-  if (counters.size >= MAX_KEYS) counters.clear();
+/**
+ * Forgets the key with the oldest window. A flood of distinct keys can only push the oldest clients out one by one:
+ * clearing the whole map would reset the limit of every client at once.
+ */
+function forgetOldest(): void {
+  const oldest = counters.keys().next();
+  if (!oldest.done) counters.delete(oldest.value);
 }
 
 /**

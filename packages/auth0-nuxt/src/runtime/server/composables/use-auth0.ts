@@ -79,7 +79,7 @@ export interface Auth0PasskeyClient {
    * @throws {MissingRequiredArgumentError} When the credential is missing or unreadable. Auth0 is not called and the flow is kept.
    * @throws {PasskeyGetTokenError} When the exchange fails. `isRetryable` is true for a wrong code: ask again for `verificationRequired`
    *   and send the same credential. Use `isMfaRequiredError(error)` for an MFA requirement, and never send `error.cause.mfa_token` to the browser.
-   * @throws {OrganizationValidationError} When the flow started with an `organization` and the organization claim of the ID token is missing or does not match. The flow is gone and no session is created. The class is from `@auth0/auth0-server-js` and is not auto-imported: check `error.name` if you do not import it.
+   * @throws {OrganizationValidationError} When the flow started with an `organization` and the organization claim of the ID token is missing or does not match. The flow is gone and no session is created.
    * @throws {SessionExpiredError} When the ID token says the session has already expired. No session is created.
    * @throws {InvalidConfigurationError} When `stateIdentifier` or `transactionIdentifier` is a prefix of `__a0_passkey_tx`, or the reverse. Auth0 is not called.
    */

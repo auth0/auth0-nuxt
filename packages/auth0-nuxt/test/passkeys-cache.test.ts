@@ -14,11 +14,11 @@ const origin = `http://localhost:${port}`;
 const app = createClient(origin);
 
 /** The `routeRules` of nuxt.config.ts of the example. */
-async function exampleRouteRules(): Promise<Record<string, unknown>> {
+async function exampleRouteRules() {
   vi.stubGlobal('defineNuxtConfig', (config: unknown) => config);
   try {
     const { default: config } = await import('../../../examples/example-nuxt-passkeys/nuxt.config');
-    return (config as { routeRules?: Record<string, unknown> }).routeRules ?? {};
+    return config.routeRules ?? {};
   } finally {
     vi.unstubAllGlobals();
   }
@@ -56,5 +56,24 @@ describe('passkeys example: an app with a broad cache rule', async () => {
     expect(a.text).toContain('alice@example.com');
     expect(b.text).toContain('bob@example.com');
     expect(b.text).not.toContain('alice@example.com');
+  });
+
+  it('I3: a request that the guard refuses says no-store too, and is not served to the next valid request', async () => {
+    // The guard sets `no-store` before its Origin check, so this is a different path from the two 200 answers above.
+    const foreign = await app.call(newUser(), '/api/passkey/login/start', {
+      body: {},
+      headers: { origin: 'https://evil.example' },
+    });
+    const missing = await app.call(newUser(), '/api/passkey/login/start', { body: {}, headers: { origin: null } });
+    const valid = await app.call(newUser(), '/api/passkey/login/start', { body: {} });
+
+    expect([foreign.status, missing.status]).toEqual([403, 403]);
+    expect([foreign.json.status, missing.json.status]).toEqual(['forbidden', 'forbidden']);
+    expect([foreign.headers.get('cache-control'), missing.headers.get('cache-control')]).toEqual([
+      'no-store',
+      'no-store',
+    ]);
+    expect(valid.status).toBe(200);
+    expect(valid.json.authnParamsPublicKey?.challenge).toBeTruthy();
   });
 });

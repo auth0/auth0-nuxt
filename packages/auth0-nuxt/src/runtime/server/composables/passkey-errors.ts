@@ -7,5 +7,7 @@ export {
   MissingTransactionError,
   MissingRequiredArgumentError,
   SessionExpiredError,
+  OrganizationValidationError,
+  InvalidConfigurationError,
   isMfaRequiredError,
 } from '@auth0/auth0-server-js';

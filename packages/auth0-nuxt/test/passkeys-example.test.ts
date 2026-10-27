@@ -66,7 +66,7 @@ describe('rate limiter', () => {
     expect(limiter.rateLimit('a', 1, 10).allowed).toBe(true);
   });
 
-  it('drops only the expired keys when the map is full', () => {
+  it('drops only the oldest key when the map is full (an expired one here)', () => {
     limiter.rateLimit('old', 1);
     vi.advanceTimersByTime(30_000);
     for (let i = 0; i < 9_999; i++) limiter.rateLimit(`k${i}`, 1); // with `old`, the map now holds 10,000 keys
@@ -79,13 +79,32 @@ describe('rate limiter', () => {
     expect(limiter.rateLimit('k0', 1).allowed).toBe(false); // still counted: only `old` was dropped
   });
 
-  it('starts over when the map is full of live keys (the price of a flood of distinct keys)', () => {
-    for (let i = 0; i < 10_000; i++) limiter.rateLimit(`k${i}`, 1);
-    expect(limiter.rateLimit('k0', 1).allowed).toBe(false);
+  it('drops only the oldest key when the map is full of live keys (a flood of distinct keys)', () => {
+    for (let i = 0; i < 10_000; i++) limiter.rateLimit(`k${i}`, 1); // `k0` is the oldest key, `k9999` the newest
+    expect(limiter.rateLimit('k1', 1).allowed).toBe(false);
+    expect(limiter.rateLimit('k9999', 1).allowed).toBe(false);
 
-    expect(limiter.rateLimit('new', 1).allowed).toBe(true);
+    expect(limiter.rateLimit('new', 1).allowed).toBe(true); // a new client is counted, not refused
 
-    expect(limiter.rateLimit('k0', 1).allowed).toBe(true); // forgotten with all the others
+    expect(limiter.rateLimit('k1', 1).allowed).toBe(false); // the others are still counted
+    expect(limiter.rateLimit('k9999', 1).allowed).toBe(false);
+    expect(limiter.rateLimit('k0', 1).allowed).toBe(true); // only the oldest was forgotten
+  });
+
+  it('counts a key whose window started again as new, not as old', () => {
+    limiter.rateLimit('first', 1);
+    vi.advanceTimersByTime(10_000);
+    limiter.rateLimit('a', 1);
+    vi.advanceTimersByTime(10_000);
+    for (let i = 0; i < 9_998; i++) limiter.rateLimit(`k${i}`, 1); // the map holds 10,000 keys: `first`, `a`, then the `k` keys
+    vi.advanceTimersByTime(51_000); // `first` and `a` have expired, the `k` keys have not
+
+    limiter.rateLimit('a', 1); // a new window for `a`
+    expect(limiter.rateLimit('a', 1).allowed).toBe(false);
+    limiter.rateLimit('new1', 1); // the map is full: the oldest keys go (`first`, then `k0`), and `a` is not one of them
+    limiter.rateLimit('new2', 1);
+
+    expect(limiter.rateLimit('a', 1).allowed).toBe(false);
   });
 
   describe('rateLimitKey', () => {
