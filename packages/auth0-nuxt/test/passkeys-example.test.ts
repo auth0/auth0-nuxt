@@ -259,3 +259,40 @@ describe('webauthnMessage', () => {
     expect(webauthnMessage('plain text')).toMatch(/failed: plain text/);
   });
 });
+
+// ─── The dev server of the example ───────────────────────────────────────────
+
+describe('nuxt.config.ts of the example', () => {
+  // `nuxt dev` answers 403 to a request whose Host header is not localhost or an IP address. The reverse proxy of the README
+  // forwards the hostname of the app, so the config lets the dev server accept the host of NUXT_AUTH0_APP_BASE_URL.
+  async function loadConfig(appBaseUrl?: string) {
+    vi.stubGlobal('defineNuxtConfig', (config: unknown) => config);
+    if (appBaseUrl === undefined) vi.stubEnv('NUXT_AUTH0_APP_BASE_URL', undefined);
+    else vi.stubEnv('NUXT_AUTH0_APP_BASE_URL', appBaseUrl);
+    vi.resetModules();
+    const { default: config } = await import('../../../examples/example-nuxt-passkeys/nuxt.config');
+    return config as { vite?: { server?: { allowedHosts?: string[] | true } } };
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  it('lets the dev server accept the host of NUXT_AUTH0_APP_BASE_URL, without its port', async () => {
+    const config = await loadConfig('https://app.login.example.com:8443');
+
+    expect(config.vite?.server?.allowedHosts).toEqual(['app.login.example.com']);
+  });
+
+  it.each([
+    ['is not set', undefined],
+    ['is empty', ''],
+    ['is not a URL', 'app.login.example.com'],
+    ['has no host', 'localhost:3000'],
+  ])('lets the dev server accept no extra host when NUXT_AUTH0_APP_BASE_URL %s', async (_label, value) => {
+    const config = await loadConfig(value);
+
+    expect(config.vite?.server?.allowedHosts).toEqual([]);
+  });
+});

@@ -4,11 +4,12 @@ import { createPage, setup } from '@nuxt/test-utils';
 import type { Page } from 'playwright-core';
 import { generateKeyPairSync, randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { EMAIL_CODE, PHONE_CODE, auth0Config, freePort, requestsTo, script } from './passkeys.shared';
+import { EMAIL_CODE, PHONE_CODE, auth0Config, freePort, ignoreNuxtEnv, requestsTo, script } from './passkeys.shared';
 
 // WebAuthn needs a secure context and an RP ID that fits the origin. `localhost` is both, so the page runs on
 // http://localhost:<port>, and the fake Auth0 uses the RP ID `localhost`. Chromium only: the virtual authenticator is a
 // Chrome DevTools feature.
+ignoreNuxtEnv();
 const port = await freePort();
 const origin = `http://localhost:${port}`;
 
@@ -282,7 +283,7 @@ describe('passkeys example: in a browser', async () => {
     expect(await requestsTo('/oauth/token')).toHaveLength(3);
   }, 60_000);
 
-  it('G11: a failure that ends the flow shows its reason once and offers no retry', async () => {
+  it('G11: a failure that ends the flow shows the failure, not the restart, and offers no retry', async () => {
     await script({
       token: [{ status: 400, json: { error: 'invalid_grant', error_description: 'The passkey was already used.' } }],
     });
@@ -291,7 +292,10 @@ describe('passkeys example: in a browser', async () => {
 
     await page.getByTestId('login').click();
 
-    expect(await textContaining(page, 'status', 'already used')).toContain('Start again');
+    const status = await textContaining(page, 'status', 'The passkey could not be used');
+    expect(status).toContain('Start again');
+    expect(status).not.toContain('is over'); // the second request found no flow and was answered with `restart`
+    expect(status).not.toContain('already used'); // Auth0's description stays in the server log
     expect(await page.getByTestId('retry').count()).toBe(0);
     expect(await requestsTo('/oauth/token')).toHaveLength(1); // the second request found no flow: Auth0 was not called
   }, 60_000);
@@ -349,5 +353,48 @@ describe('passkeys example: in a browser', async () => {
 
     expect(await textOf(page, 'user')).toBe('login@example.com');
     expect(await requestsTo('/oauth/token')).toHaveLength(1);
+  }, 60_000);
+
+  it('G15: a rate-limited "Send new codes" shows the wait and keeps the inputs for the codes that were already sent', async () => {
+    await script({ verificationRequired: ['email'] });
+    const { page } = await openApp();
+    await fillSignup(page, { email: 'new@example.com' });
+    await page.getByTestId('codes-form').waitFor({ timeout: 10_000 });
+    await script({
+      register: [
+        {
+          status: 429,
+          json: { error: 'too_many_requests', error_description: 'slow down' },
+          headers: { 'retry-after': '9' },
+        },
+      ],
+    });
+
+    await page.getByTestId('resend').click();
+
+    expect(await textContaining(page, 'status', 'Try again in 9 seconds')).toContain('Too many requests');
+    expect(await page.getByTestId('code-email').isVisible()).toBe(true);
+    expect(await page.getByTestId('retry').count()).toBe(0);
+    await page.getByTestId('code-email').fill(EMAIL_CODE); // the first code still works
+    await page.getByTestId('codes-submit').click();
+    expect(await textOf(page, 'user')).toBe('new@example.com');
+  }, 60_000);
+
+  it('G16: a wrong-code answer without any code to ask for ends the signup, with no empty code form', async () => {
+    // Auth0 does not answer like this for a signup without codes. If it did, the page must not show a form with no inputs.
+    await script({
+      token: [
+        {
+          status: 400,
+          json: { error: 'invalid_grant', error_description: 'Invalid or expired session', auth_session: 'AS-1' },
+        },
+      ],
+    });
+    const { page } = await openApp();
+
+    await fillSignup(page, { email: 'new@example.com' });
+
+    expect(await textContaining(page, 'status', 'The passkey could not be used')).toContain('Start again');
+    expect(await page.getByTestId('codes-form').count()).toBe(0);
   }, 60_000);
 });

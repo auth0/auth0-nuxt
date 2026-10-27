@@ -15,6 +15,7 @@ import {
   fakeLog,
   freePort,
   hasSession,
+  ignoreNuxtEnv,
   loginCredential,
   newUser,
   readFlow,
@@ -28,6 +29,7 @@ import {
   type User,
 } from './passkeys.shared';
 
+ignoreNuxtEnv();
 // The Origin check compares with the base URL of the app, so the port has to be known before the server starts.
 const port = await freePort();
 const origin = `http://localhost:${port}`;
@@ -341,7 +343,7 @@ describe('passkeys example: HTTP flows', async () => {
         const res = await complete(user, { credential });
 
         expect(res.status).toBe(400);
-        expect(res.json.status).toBe('failed');
+        expect(res.json).toEqual({ status: 'failed' }); // Auth0's text stays in the server log
         expect(user.jar.has(FLOW_COOKIE)).toBe(true);
 
         const again = await complete(user, { credential });
@@ -359,7 +361,7 @@ describe('passkeys example: HTTP flows', async () => {
       const res = await complete(user, { credential });
 
       expect(res.status).toBe(400);
-      expect(res.json.status).toBe('invalid');
+      expect(res.json).toEqual({ status: 'invalid' });
     });
 
     it('B10: a newer start replaces the flow, so the first credential is answered with `restart`', async () => {
@@ -375,7 +377,7 @@ describe('passkeys example: HTTP flows', async () => {
   });
 
   describe('C. a start that Auth0 refuses', () => {
-    it('C1: a refused signup is answered with 400 `error` and the description, and no flow is stored', async () => {
+    it('C1: a refused signup is answered with 400 `error` and no description, and no flow is stored', async () => {
       await script({
         register: [{ status: 400, json: { error: 'invalid_request', error_description: 'user already exists' } }],
       });
@@ -384,12 +386,11 @@ describe('passkeys example: HTTP flows', async () => {
       const res = await app.call(user, '/api/passkey/signup/start', { body: { email: 'dup@example.com' } });
 
       expect(res.status).toBe(400);
-      expect(res.json.status).toBe('error');
-      expect(res.json.message).toContain('user already exists');
+      expect(res.json).toEqual({ status: 'error' }); // the description stays in the server log
       expect(user.jar.has(FLOW_COOKIE)).toBe(false);
     });
 
-    it('C1: a refused login start is answered with 400 `error` as well', async () => {
+    it('C1: a refused login start is answered with 400 `error` and no description as well', async () => {
       await script({
         challenge: [{ status: 400, json: { error: 'invalid_request', error_description: 'bad realm' } }],
       });
@@ -398,8 +399,7 @@ describe('passkeys example: HTTP flows', async () => {
       const res = await app.call(user, '/api/passkey/login/start', { body: {} });
 
       expect(res.status).toBe(400);
-      expect(res.json.status).toBe('error');
-      expect(res.json.message).toContain('bad realm');
+      expect(res.json).toEqual({ status: 'error' });
     });
 
     it.each([
@@ -604,6 +604,13 @@ describe('passkeys example: HTTP flows', async () => {
       expect(register?.headers['auth0-forwarded-for']).toBe('5.6.7.8');
     });
 
+    it('D9: an IPv4-mapped IPv6 address is told to Auth0 as the IPv4 address', async () => {
+      await app.call(userAt('::ffff:203.0.113.9'), '/api/passkey/signup/start', { body: { email: 'a@example.com' } });
+
+      const [register] = await requestsTo('/passkey/register');
+      expect(register?.headers['auth0-forwarded-for']).toBe('203.0.113.9');
+    });
+
     it('D9: the same address goes to Auth0 on a login start and on complete', async () => {
       const user = userAt('1.2.3.4, 5.6.7.9');
       const { credential } = await startLogin(user);
@@ -633,7 +640,7 @@ describe('passkeys example: HTTP flows', async () => {
     });
 
     describe('when there is no usable client address in the header', () => {
-      const socketAddresses = ['127.0.0.1', '::ffff:127.0.0.1', '::1'];
+      const socketAddresses = ['127.0.0.1', '::1'];
 
       it('D9: a last entry that is not an IP address is not forwarded: the socket address is used', async () => {
         await app.call(userAt('5.6.7.8, not-an-ip'), '/api/passkey/signup/start', { body: { email: 'a@example.com' } });

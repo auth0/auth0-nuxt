@@ -192,7 +192,7 @@ export default defineNuxtConfig({
 });
 ```
 
-These identifiers are used as keys for storing temporary authentication data in cookies. If not specified, the SDK will use its default identifiers.
+These identifiers are used as keys for storing temporary authentication data in cookies. If not specified, the SDK will use its default identifiers. If you use [passkeys](#login-and-signup-using-passkeys), neither identifier may be a prefix of `__a0_passkey_tx`, or the other way round (for example `__a0`): the passkey methods throw an `InvalidConfigurationError` before they call Auth0.
 
 ## Protecting Routes
 
@@ -352,7 +352,7 @@ With a [stateful session store](#stateful-sessions) nothing changes for these ro
 
 ### The routes
 
-The routes are short because the checks live in four small files in `server/utils/`. Nitro auto-imports them, as it does for `useAuth0` and the passkey error classes (`PasskeyRegisterError`, `PasskeyChallengeError`, `PasskeyGetTokenError`, `MissingTransactionError`, `MissingRequiredArgumentError`, `SessionExpiredError` and `isMfaRequiredError`), so the routes need no imports. Copy the four files from the example app, and read [Securing the routes](#securing-the-routes) for what they do and what to change before you go live:
+The routes are short because the checks live in four small files in `server/utils/`. Nitro auto-imports them, as it does for `useAuth0` and the passkey error classes (`PasskeyRegisterError`, `PasskeyChallengeError`, `PasskeyGetTokenError`, `MissingTransactionError`, `MissingRequiredArgumentError`, `SessionExpiredError` and `isMfaRequiredError`), so the routes need no imports. (If your app already has a `server/utils` export with one of these names, yours is used and Nitro prints a `Duplicated imports` warning.) Copy the four files from the example app, and read [Securing the routes](#securing-the-routes) for what they do and what to change before you go live:
 
 | File | What it holds |
 | --- | --- |
@@ -443,9 +443,9 @@ What the routes answer:
 | `POST /api/passkey/login/start` | 200 with `authnParamsPublicKey` | 400 `error`, 403 `forbidden`, 429 `rate_limited` |
 | `POST /api/passkey/complete` | 200 `complete`, or 200 `mfa_required` | 400 `retry`, `invalid`, `session_expired`, `restart` or `failed`, 403 `forbidden`, 413 and 415 `invalid`, 429 `wait` (Auth0 limited the call) or `rate_limited` (this app's limit) |
 
-The `status` values (`complete`, `retry`, `wait` and so on) are only a convention between these routes and the browser code below. Use whatever fits your frontend. The browser reads `status` from the body, and treats an answer without a known `status` (for example the generic 500 of Nitro) as `failed`.
+The `status` values (`complete`, `retry`, `wait` and so on) are only a convention between these routes and the browser code below. Use whatever fits your frontend. The browser reads `status` from the body, and treats an answer without a `status` (for example the generic 500 of Nitro) as `failed`.
 
-`startSignup()` and `startLogin()` throw a `PasskeyRegisterError` or a `PasskeyChallengeError` when Auth0 refuses the request, for example because the user already exists, a code could not be sent, or Auth0 rate limits the call. Nothing is stored then. Nitro answers an error that nothing caught with the HTTP status of Auth0's answer (`error.statusCode`, for example 401 for a wrong client secret), so catch these errors as `startFailure()` does, and answer with your own status and message.
+`startSignup()` and `startLogin()` throw a `PasskeyRegisterError` or a `PasskeyChallengeError` when Auth0 refuses the request, for example because the user already exists, a code could not be sent, or Auth0 rate limits the call. Nothing is stored then. Nitro answers an error that nothing caught with the HTTP status of Auth0's answer (`error.statusCode`, for example 401 for a wrong client secret), so catch these errors as `startFailure()` does, and answer with your own status. Log Auth0's description, and keep it out of the answer (see "Securing the routes").
 
 ### Handling errors and retries
 
@@ -459,9 +459,11 @@ The `status` values (`complete`, `retry`, `wait` and so on) are only a conventio
 | `SessionExpiredError` | The passkey was accepted, but the `session_expiry` claim of the ID token has already passed, so no session was created. The flow is gone. | `session_expired` | Tell the user, and send them to sign in again, for example with OIDC login. |
 | `MissingTransactionError` | No flow to complete: none was started, it expired, a newer start replaced it (for example in another tab), or the cookie cannot be read (for example after the session secret changed). Auth0 was not called. | `restart` | Start a new flow. |
 | `MissingRequiredArgumentError`, or `PasskeyGetTokenError` with `cause.error` set to `invalid_request` | The request was incomplete or invalid: the credential cannot be read, or a code is missing or blank. The SDK checks the credential and the codes before it calls Auth0, and the flow is kept. | `invalid` | Fix the input, then send again. |
-| Any other `PasskeyGetTokenError` | Auth0 refused the exchange for another reason (see `error.cause?.error`, for example `invalid_grant` when the attempt expired or was already used), or could not be reached (the error has no `statusCode`). | `failed` | Send the same request once more. If that fails too, let the user try again with the same passkey. A flow that is over answers `restart` the second time: show the reason and start a new flow. |
+| Any other `PasskeyGetTokenError` | Auth0 refused the exchange for another reason (see `error.cause?.error`, for example `invalid_grant` when the attempt expired or was already used), or could not be reached (the error has no `statusCode`). | `failed` | Send the same request once more. If that fails too, let the user try again with the same passkey. A flow that is over answers `restart` the second time: tell the user that the passkey could not be used (the first answer), not that the flow expired, and start a new flow. |
 
-The guard and the input checks answer before Auth0 is called: `forbidden` for a request from another site, `rate_limited` for a client over the limit, `invalid` for a body that is too large (413), not sent as JSON (415) or not valid (400). An error that is none of these (a bug, or your session store throwing) is thrown again, so that Nitro answers with its generic 500, which leaks nothing.
+The guard and the input checks answer before Auth0 is called: `forbidden` for a request from another site, `rate_limited` for a client over the limit, `invalid` for a body that is too large (413), not sent as JSON (415) or not valid (400). An error that is none of these (a bug, or your session store throwing) is thrown again, so that Nitro answers with `Server Error` and none of the details of the error. Nitro does take the HTTP status from a thrown error that has a `statusCode`, which is why the Auth0 refusals are caught: if your session store throws such errors, map them yourself.
+
+If your start calls pass an `organization`, `complete()` can also throw an `OrganizationValidationError` when the organization claim of the ID token is missing or differs. The flow is gone and no session is created, so tell the user to start again. The class is from `@auth0/auth0-server-js` and is not auto-imported: check `error.name` if you do not import it. The example never passes an `organization`, so `completeFailure()` has no case for it.
 
 Use `isRetryable` to tell a wrong code from a failure that ends the attempt, and never the HTTP status or the error description: they are the same for both, because both are an `invalid_grant`. The errors never carry the `authSession`, but their `cause` can hold an `mfa_token`, so do not log or return a whole error.
 
@@ -496,7 +498,8 @@ export function completeFailure(event: H3Event, error: unknown): PasskeyBody {
     (error instanceof PasskeyGetTokenError && error.cause?.error === 'invalid_request')
   ) {
     // An incomplete or invalid request, for example a missing code. The flow is still open.
-    return reply(event, 400, { status: 'invalid', message: describeError(error) });
+    console.warn('passkey.complete() request was invalid:', describeError(error));
+    return reply(event, 400, { status: 'invalid' });
   }
   if (error instanceof MissingTransactionError) {
     // No flow to complete: none was started, it expired, or a newer start replaced it. Auth0 was not called.
@@ -506,7 +509,7 @@ export function completeFailure(event: H3Event, error: unknown): PasskeyBody {
     // Usually the end of the attempt (too many wrong codes, the time ran out). After a server or network error the SDK
     // keeps the flow, so the browser sends the same request once more before it starts again.
     console.warn('passkey.complete() failed:', describeError(error));
-    return reply(event, 400, { status: 'failed', message: describeError(error) });
+    return reply(event, 400, { status: 'failed' });
   }
   throw error;
 }
@@ -560,7 +563,7 @@ async function showUser() {
 
 async function loginWithPasskey() {
   const start = await post('/api/passkey/login/start');
-  if (!start.authnParamsPublicKey) return start; // Auth0 refused the start: show start.message
+  if (!start.authnParamsPublicKey) return start; // Auth0 refused the start: show your own message
 
   const publicKey = requestOptions(start.authnParamsPublicKey);
   const credential = await navigator.credentials.get({ publicKey });
@@ -574,7 +577,7 @@ async function loginWithPasskey() {
 // { email: '123456', phone: '654321' }.
 async function signUpWithPasskey(profile) {
   const start = await post('/api/passkey/signup/start', profile);
-  if (!start.authnParamsPublicKey) return start; // for example the user already exists: show start.message
+  if (!start.authnParamsPublicKey) return start; // for example the user already exists: show your own message
 
   // Ask for the codes first: the passkey is only created once the user has them.
   let identifiers = start.verificationRequired;
@@ -611,7 +614,7 @@ These routes are open to anyone who can reach them, and the signup start route c
 - **Accept only requests from your own page.** The routes write cookies, so `guardPasskeyRequest()` refuses a `POST` whose `Origin` header is not the origin of `runtimeConfig.auth0.appBaseUrl` (403 `forbidden`). `fetch()` always sends `Origin` with a `POST`, and a page on another site cannot fake it. So `appBaseUrl` must be the address the browser uses, with its scheme and port.
 - **Never cache the answers.** `guardPasskeyRequest()` sets `Cache-Control: no-store` before it does anything else, so no answer of these routes is cached, errors included.
 - **Send one complete request at a time**, for example by disabling the submit button while a request is pending: parallel requests can use up the attempts Auth0 allows. The example also stops asking for codes after 5 wrong ones. That only spares the user: what limits a script is the rate limit above and Auth0's own limits.
-- **Do not show Auth0's error text to visitors.** To help you while you test, the example answers a refused start with Auth0's description (`describeError()`), for example `user already exists`. That tells anyone whether an address has an account, and a wrong client secret shows as `Client authentication failed`. In a real app, answer with a generic message and log the details.
+- **Do not show Auth0's error text to visitors.** It can name your settings (for example when the client secret is wrong) or tell whether an address has an account. The example logs `describeError(error)` on the server and answers with a status only: the page has its own sentence for each one. To see Auth0's reason while you test, read the log of the terminal that runs the app.
 - **Never log the credential, the codes or a whole error.** `describeError()` returns a one-line summary instead: the description and the code of the Auth0 error, or for a server or network failure the message of its `cause`.
 
 ## Stateful Sessions

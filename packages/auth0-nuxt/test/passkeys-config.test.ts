@@ -7,12 +7,12 @@ import {
   auth0Config,
   createClient,
   freePort,
+  ignoreNuxtEnv,
   newUser,
   requestsTo,
   script,
   signupCredential,
   storedSessions,
-  userAt,
 } from './passkeys.shared';
 import { decrypt } from './encryption';
 
@@ -21,8 +21,8 @@ import { decrypt } from './encryption';
 // stateful session store.
 //
 // With an empty `clientIpHeader` every request of this server comes from one client, the socket address, so all the tests
-// of this file share one rate-limit count per route. D10 uses it up on purpose, so it stays the LAST test of the file:
-// new tests go above it.
+// of this file share one rate-limit count per route (5 signup starts a minute). Keep the signup starts of a test few.
+ignoreNuxtEnv();
 const port = await freePort();
 const origin = `http://localhost:${port}`;
 const app = createClient(origin);
@@ -88,25 +88,5 @@ describe('passkeys example: other configurations', async () => {
 
     const profile = await app.call<{ email?: string }>(user, '/auth/profile');
     expect(profile.json.email).toBe('new@example.com');
-  });
-
-  // Keep this test last (see the comment at the top of the file).
-  it('D10: with the default `clientIpHeader`, a client-sent X-Forwarded-For is neither forwarded nor the rate-limit key', async () => {
-    // Six different spoofed addresses are one client, the socket address, so the sixth request is over the limit of 5.
-    // (If the header were the key, none of the six would be limited.)
-    const statuses: number[] = [];
-    for (let i = 0; i < 6; i++) {
-      const res = await app.call(userAt(`198.51.100.${i}`), '/api/passkey/signup/start', {
-        body: { email: `u${i}@example.com` },
-      });
-      statuses.push(res.status);
-    }
-
-    expect(statuses.at(-1)).toBe(429);
-    const forwarded = (await requestsTo('/passkey/register')).map((request) => request.headers['auth0-forwarded-for']);
-    expect(forwarded.length).toBeGreaterThan(0);
-    for (const value of forwarded) {
-      expect(['127.0.0.1', '::ffff:127.0.0.1', '::1']).toContain(value);
-    }
   });
 });

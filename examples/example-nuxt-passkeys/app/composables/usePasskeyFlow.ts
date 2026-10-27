@@ -181,12 +181,17 @@ export function usePasskeyFlow() {
   }
 
   /** The wait: Auth0 or this app refused the request before it used the attempt. */
-  function waitThen(answer: Answer, resend: () => Promise<void>) {
+  function waitSentence(answer: Answer) {
     const who = answer.status === 'wait' ? 'Auth0 is rate limiting these requests.' : 'Too many requests.';
     const when = answer.retryAfterSeconds
       ? `Try again in ${answer.retryAfterSeconds} seconds.`
       : 'Wait a moment, then try again.';
-    offerRetry(`${who} ${when}`, resend, answer.retryAfterSeconds);
+    return `${who} ${when}`;
+  }
+
+  /** Shows the wait and keeps the request: the user can send the same one again, or start over. */
+  function waitThen(answer: Answer, resend: () => Promise<void>) {
+    offerRetry(waitSentence(answer), resend, answer.retryAfterSeconds);
   }
 
   /** Shows one code input for each identifier in the list. The others were accepted. */
@@ -311,8 +316,11 @@ export function usePasskeyFlow() {
       working('Sending new codes...');
       const start = await post<SignupStart>('/api/passkey/signup/start', current.profile);
       if (!start.authnParamsPublicKey) {
-        // Nothing was stored, so the codes that were already sent still work.
-        if (start.status === 'rate_limited') return waitThen(start, resendCodes);
+        // Nothing was stored, so the codes that were already sent still work: keep their inputs.
+        if (start.status === 'rate_limited') {
+          askForCodes(current.pending);
+          return say(waitSentence(start), 'warn');
+        }
         return askForCodes(current.pending, explain(start, 'New codes could not be sent.'));
       }
 
@@ -344,7 +352,7 @@ export function usePasskeyFlow() {
       // After a server or network error the flow is still open: send the same request once more.
       const first = answer;
       answer = await post('/api/passkey/complete', body);
-      // The first failure had ended the flow (for example Auth0 refused the passkey), so show its reason.
+      // The first failure had ended the flow (for example Auth0 refused the passkey), so show that failure, not the restart.
       if (answer.status === 'restart') {
         answer = first;
         over = true;
@@ -375,6 +383,8 @@ export function usePasskeyFlow() {
         // A wrong code: ask again for the identifiers still listed, and send the same passkey.
         if (flow !== 'signup' || !signup) return fail('The passkey could not be used. Start again.');
         const pending = answer.verificationRequired?.length ? answer.verificationRequired : signup.pending;
+        // No code to ask for (a signup without codes): a form without inputs would be a dead end.
+        if (pending.length === 0) return fail('The passkey could not be used. Start again.');
         if (++signup.wrongCodes >= MAX_WRONG_CODES) return fail('Too many wrong codes. Start the signup again.');
         clearCodes();
         return askForCodes(

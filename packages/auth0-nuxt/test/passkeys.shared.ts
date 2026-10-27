@@ -5,6 +5,22 @@ import { decrypt } from './encryption';
 import type { Auth0ClientOptions } from '../src/types';
 import type { FakeRequest, FakeScript } from './fixtures/passkeys/fakes/fake-state';
 
+/**
+ * Removes the `NUXT_AUTH0_*` and `NUXT_PASSKEY_*` variables of this process, so that the server of the fixture gets the
+ * settings of its own `nuxt.config.ts` and talks to the fake Auth0. Call it before `setup()`.
+ *
+ * Nitro applies every `NUXT_*` variable over `runtimeConfig` when the server starts. The CI job exports the domain and
+ * the credentials of a real tenant for `rendering.test.ts`, which would replace the fake domain and send the app to that
+ * tenant. Each test file runs in its own process, so `rendering.test.ts` keeps its variables.
+ */
+export function ignoreNuxtEnv(): void {
+  for (const name of Object.keys(process.env)) {
+    if (name.startsWith('NUXT_AUTH0_') || name.startsWith('NUXT_PASSKEY_')) {
+      delete process.env[name];
+    }
+  }
+}
+
 /** Must equal `runtimeConfig.auth0.sessionSecret` in fixtures/passkeys/nuxt.config.ts. */
 export const SESSION_SECRET = 'a-very-long-secret-for-tests-1234567890';
 

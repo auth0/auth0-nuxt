@@ -1,6 +1,8 @@
 import { fileURLToPath } from 'node:url';
 
 // The fixture runs the passkeys example's own app and server code against the module source, with a fake Auth0.
+// A `NUXT_AUTH0_*` or `NUXT_PASSKEY_*` variable replaces the matching setting below when the server starts, so the test
+// files call `ignoreNuxtEnv()` (test/passkeys.shared.ts) before `setup()`.
 const example = fileURLToPath(new URL('../../../../../examples/example-nuxt-passkeys', import.meta.url));
 const fake = (name: string) => fileURLToPath(new URL(`./fakes/${name}`, import.meta.url));
 

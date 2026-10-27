@@ -36,17 +36,20 @@ export function guardPasskeyRequest(event: H3Event, { name, limit }: GuardOption
  * The IP address of the client. By default it is the address of the connection. If `runtimeConfig.passkey.clientIpHeader`
  * names a header that a proxy you control sets or appends to, the LAST entry of that header is used when it is a valid IP
  * address (a value with a port is not): it is the address that proxy saw. The first entry is whatever the client sent, so never use it.
+ * An IPv4 client that reaches a dual-stack listener shows up as `::ffff:203.0.113.9`. That is returned as the IPv4
+ * address `203.0.113.9`, the form that logs and allow lists use.
  */
 export function clientIp(event: H3Event): string | undefined {
   const header = useRuntimeConfig(event).passkey.clientIpHeader;
-  if (header) {
-    const entries = (getRequestHeader(event, header) ?? '').split(',');
-    const last = entries[entries.length - 1]?.trim();
-    if (last && isIP(last)) {
-      return last;
-    }
-  }
-  return getRequestIP(event);
+  const entries = header ? (getRequestHeader(event, header) ?? '').split(',') : [];
+  const last = entries[entries.length - 1]?.trim();
+  const address = last && isIP(last) ? last : getRequestIP(event);
+  return address ? unmapIPv4(address) : undefined;
+}
+
+/** `::ffff:203.0.113.9` is the IPv4 address `203.0.113.9`. */
+function unmapIPv4(address: string): string {
+  return /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i.exec(address)?.[1] ?? address;
 }
 
 /** The request options that tell Auth0 the address of the user. See "Securing the routes" in EXAMPLES.md. */

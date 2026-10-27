@@ -37,7 +37,7 @@ export class PasskeyHttpError extends Error {
 }
 
 /**
- * A short description of an error that is safe to log or show: the Auth0 error description and code when there is one,
+ * A short description of an error that is safe to log: the Auth0 error description and code when there is one,
  * else the message. A server or network failure has no Auth0 error, so the reason comes from `cause.message` (for
  * example "fetch failed"). Never log or return the whole error: the `cause` of a passkey error can hold an `mfa_token`.
  */
@@ -83,9 +83,9 @@ const retryAfterHeader = ({ retryAfterSeconds }: { retryAfterSeconds?: number })
 
 /**
  * Answers an error from `startSignup()` or `startLogin()`. An error that is not a refusal by Auth0 (a bug, a failure of
- * your own store, a network failure) is thrown again, so that Nitro answers with its generic 500. Never let an Auth0
- * refusal go through uncaught: Nitro answers with the HTTP status of Auth0, so a 401 for a wrong client secret would
- * reach the browser as a 401 of your app.
+ * your own store, a network failure) is thrown again, so that Nitro answers with `Server Error` and no details. Never
+ * let an Auth0 refusal go through uncaught: Nitro takes the HTTP status from an error that has a `statusCode`, so a 401
+ * for a wrong client secret would reach the browser as a 401 of your app.
  */
 export function startFailure(event: H3Event, error: unknown): PasskeyBody {
   if (error instanceof PasskeyHttpError) {
@@ -96,10 +96,11 @@ export function startFailure(event: H3Event, error: unknown): PasskeyBody {
       const wait = waitFor(error);
       return reply(event, 429, { status: 'rate_limited', ...wait }, retryAfterHeader(wait));
     }
+    // Auth0's description stays in the server log. It can name your settings (for example when the client secret is
+    // wrong) or tell whether an address has an account, so the browser gets only the status and the page uses its own
+    // sentence.
     console.warn('passkey start failed:', describeError(error));
-    // This example shows Auth0's description to help you while you test. A real app shows a generic message and logs
-    // the details: the description can tell whether an address is already registered.
-    return reply(event, 400, { status: 'error', message: describeError(error) });
+    return reply(event, 400, { status: 'error' });
   }
   throw error;
 }
@@ -136,7 +137,8 @@ export function completeFailure(event: H3Event, error: unknown): PasskeyBody {
     (error instanceof PasskeyGetTokenError && error.cause?.error === 'invalid_request')
   ) {
     // An incomplete or invalid request, for example a missing code. The flow is still open.
-    return reply(event, 400, { status: 'invalid', message: describeError(error) });
+    console.warn('passkey.complete() request was invalid:', describeError(error));
+    return reply(event, 400, { status: 'invalid' });
   }
   if (error instanceof MissingTransactionError) {
     // No flow to complete: none was started, it expired, or a newer start replaced it. Auth0 was not called.
@@ -146,7 +148,7 @@ export function completeFailure(event: H3Event, error: unknown): PasskeyBody {
     // Usually the end of the attempt (too many wrong codes, the time ran out). After a server or network error the SDK
     // keeps the flow, so the browser sends the same request once more before it starts again.
     console.warn('passkey.complete() failed:', describeError(error));
-    return reply(event, 400, { status: 'failed', message: describeError(error) });
+    return reply(event, 400, { status: 'failed' });
   }
   throw error;
 }

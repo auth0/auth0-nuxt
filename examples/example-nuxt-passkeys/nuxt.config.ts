@@ -1,8 +1,17 @@
+// `nuxt dev` refuses a request whose `Host` header is not `localhost` or an IP address, and the reverse proxy of the README
+// forwards the hostname of the app. So the dev server must accept the host of NUXT_AUTH0_APP_BASE_URL. A production build
+// has no such check.
+const appBaseUrl = process.env.NUXT_AUTH0_APP_BASE_URL ?? '';
+const appHost = URL.canParse(appBaseUrl) ? new URL(appBaseUrl).hostname : '';
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   modules: ['@auth0/auth0-nuxt'],
   css: ['~/assets/css/main.css'],
+  vite: {
+    server: { allowedHosts: appHost ? [appHost] : [] },
+  },
   runtimeConfig: {
     auth0: {
       domain: '', // is overridden by NUXT_AUTH0_DOMAIN environment variable

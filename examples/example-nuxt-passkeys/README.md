@@ -103,18 +103,19 @@ Open `NUXT_AUTH0_APP_BASE_URL` in your browser. The example targets the Node ser
 The browser never sees the Auth0 `authSession`. The SDK keeps it in the encrypted `HttpOnly` cookie `__a0_passkey_tx` between the start and the complete request.
 
 > [!NOTE]
-> This example shows Auth0's error messages on the page to help you while testing. In a real app, show a generic message and log the details.
+> The page never shows Auth0's error text: it can name your settings or tell whether an address has an account. Auth0's reason is printed in the terminal that runs the app (`passkey start failed: ...`, `passkey.complete() failed: ...`).
 
 ## Troubleshooting
 
 | What you see | Why, and what to do |
 | --- | --- |
 | The server stops with `Auth0 configuration error` | Copy `.env.example` to `.env` and fill in the values. |
+| `Blocked request. This host ("app.login.example.com") is not allowed.` | `nuxt dev` only accepts `localhost`, IP addresses and the host of `NUXT_AUTH0_APP_BASE_URL`, which it reads when it starts. Set that variable to the address you open in the browser, then restart `npm start`. |
 | `This request must come from the app's own page` | The page was not opened at `NUXT_AUTH0_APP_BASE_URL`. Use that exact address (scheme, host and port). |
 | `The browser refused the passkey: the page origin does not fit its RP ID` | The page is not served over HTTPS from your custom domain or one of its subdomains. See [Where to run it](#where-to-run-it). |
 | This browser does not support passkeys | The page is not in a secure context (HTTPS), or the browser has no WebAuthn. |
-| The signup or login does not start, with a message from Auth0 | Check that the connection has the Passkey method turned on and is enabled for the application, that `NUXT_PASSKEY_REALM` is its name (or it is the Default Directory), that `NUXT_AUTH0_DOMAIN` is the custom domain, and that the application uses the Client Secret method. |
-| The passkey prompt works, but finishing fails with a message from Auth0 | Turn on the **Passkey** grant for the application. |
+| The page says `The signup could not start.` or `The login could not start.` | Auth0 refused the start. Read its reason in the terminal (`passkey start failed: ...`). Check that the connection has the Passkey method turned on and is enabled for the application, that `NUXT_PASSKEY_REALM` is its name (or it is the Default Directory), that `NUXT_AUTH0_DOMAIN` is the custom domain, and that the application uses the Client Secret method. |
+| The passkey prompt works, but finishing fails with `The passkey could not be used` and no **Try again** | Read Auth0's reason in the terminal (`passkey.complete() failed: ...`). Most often the **Passkey** grant is off for the application: turn it on. |
 | `This signup is over` or `This login is over` | The flow expired (Auth0 currently allows 60 seconds, or 15 minutes when codes are needed), or a newer passkey flow started in another tab. Start again. |
 | `Auth0 is rate limiting these requests` | Wait as told, then use **Try again**. |
 | `Too many requests` | This app's own rate limit (per IP address and minute: 5 signup starts, 30 login starts, 30 completions). Wait as told, then use **Try again**. The flow is kept. If every user sees it, the app sees one address for all of them: behind a proxy, set `NUXT_PASSKEY_CLIENT_IP_HEADER`. |
