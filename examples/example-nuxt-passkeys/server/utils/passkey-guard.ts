@@ -9,8 +9,9 @@ export interface GuardOptions {
 }
 
 /**
- * The checks every passkey route starts with: the answer is never cached, the request must come from the app's own
- * page, and one client may only call the route so often. It throws a PasskeyHttpError when a check fails.
+ * The checks every passkey route starts with: the answer says `no-store` (a Nitro cache rule would override that, see
+ * `routeRules` in nuxt.config.ts), the request must come from the app's own page, and one client may only call the
+ * route so often. It throws a PasskeyHttpError when a check fails.
  */
 export function guardPasskeyRequest(event: H3Event, { name, limit }: GuardOptions): void {
   setResponseHeader(event, 'Cache-Control', 'no-store');

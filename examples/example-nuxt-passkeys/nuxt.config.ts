@@ -12,6 +12,12 @@ export default defineNuxtConfig({
   vite: {
     server: { allowedHosts: appHost ? [appHost] : [] },
   },
+  // Nitro runs a route that a `cache` or `swr` rule matches without the headers and cookies of the request, and it replaces
+  // the Cache-Control header of the route. A broad rule of the app (for example '/**': { swr: 60 }) would make these routes
+  // answer 403 to every client, with a header that lets a CDN cache that answer. So keep them out of every cache rule.
+  routeRules: {
+    '/api/passkey/**': { cache: false },
+  },
   runtimeConfig: {
     auth0: {
       domain: '', // is overridden by NUXT_AUTH0_DOMAIN environment variable
