@@ -294,6 +294,24 @@ const accessTokenResult = await auth0Client.getAccessToken();
 // You can now use `accessTokenResult.accessToken`
 ```
 
+### 7. Passkeys
+
+Users can sign up and log in with a passkey (a fingerprint, a face scan or a security key) instead of a password, and a signup can verify the email address and phone number with one-time codes first. The module does not mount routes for this. You add three server routes that call `useAuth0(event).passkey`, so your own validation, rate limits and bot checks sit in front of them:
+
+```ts
+const auth0 = useAuth0(event);
+
+// 1. Start. Return `authnParamsPublicKey` to the browser, which runs `navigator.credentials.create()` or `.get()`.
+const { authnParamsPublicKey, verificationRequired } = await auth0.passkey.startSignup({ email, realm });
+// or, for a login: const { authnParamsPublicKey } = await auth0.passkey.startLogin({ realm });
+
+// 2. Complete. The browser sends the credential (and the one-time codes) back: the SDK exchanges it for tokens and
+//    writes the session.
+await auth0.passkey.complete({ credential, verification });
+```
+
+Passkeys need a [custom domain](https://auth0.com/docs/customize/custom-domains), an application that uses the Client Secret method with the **Passkey** grant, and a database connection with the Passkey authentication method. See [Login and Signup using Passkeys](https://github.com/auth0/auth0-nuxt/blob/main/packages/auth0-nuxt/EXAMPLES.md#login-and-signup-using-passkeys) for the routes, the error handling and how to secure them, and the [passkeys example app](https://github.com/auth0/auth0-nuxt/tree/main/examples/example-nuxt-passkeys) for a page that runs the whole flow.
+
 
 ## Feedback
 

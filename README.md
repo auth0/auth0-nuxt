@@ -19,6 +19,7 @@ The following examples can be found in the examples directory:
 
 - [Nuxt 3 Web App Example](./examples/example-nuxt-web/README.md)
 - [Nuxt 4 Web App Example](./examples/example-nuxt-4-web/README.md)
+- [Nuxt 4 Web App with Passkeys Example](./examples/example-nuxt-passkeys/README.md)
 
 Before running the examples, you need to install the dependencies for the monorepo and build all the packages.
 

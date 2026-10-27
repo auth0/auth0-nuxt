@@ -59,7 +59,7 @@
     "vitest": "^4.0.2"
   },
   "dependencies": {
-    "@auth0/auth0-server-js": "^1.2.0",
+    "@auth0/auth0-server-js": "^1.17.0",
     "h3": "^1.15.5"
   },
   "files": [

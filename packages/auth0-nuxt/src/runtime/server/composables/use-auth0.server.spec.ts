@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { useAuth0, type Auth0Client } from './use-auth0';
-import { ServerClient, type ServerClientOptions } from '@auth0/auth0-server-js';
+import { ServerClient, type PasskeyCredentialResponse, type ServerClientOptions } from '@auth0/auth0-server-js';
 import type { H3Event } from 'h3';
 
 vi.mock('@auth0/auth0-server-js', async (importOriginal) => {
@@ -42,9 +42,19 @@ vi.mock('../../helpers/import-meta', () => metaMock);
 
 describe('useAuth0 server composable (server environment)', () => {
   let mockEvent: H3Event;
+  const passkeyClient = {
+    startSignup: vi.fn(),
+    startLogin: vi.fn(),
+    complete: vi.fn(),
+  };
+  const readPasskeyClient = vi.fn(() => passkeyClient);
   const mockServerClientInstance = {
     startInteractiveLogin: vi.fn(),
     getSession: vi.fn(),
+    // A getter, like the real ServerClient: `readPasskeyClient` counts how often it is read.
+    get passkey() {
+      return readPasskeyClient();
+    },
   };
 
   beforeEach(() => {
@@ -193,5 +203,78 @@ describe('useAuth0 server composable (server environment)', () => {
 
     expect(options.stateIdentifier).toBeUndefined();
     expect(options.transactionIdentifier).toBeUndefined();
+  });
+
+  describe('passkey', () => {
+    const credential: PasskeyCredentialResponse = {
+      id: 'cred-id',
+      rawId: 'cred-id',
+      type: 'public-key',
+      response: { clientDataJSON: 'e30' },
+    };
+    const requestOptions = { headers: { 'auth0-forwarded-for': '203.0.113.9' } };
+
+    it('P1: startSignup forwards the options, the event and the request options, and returns the result', async () => {
+      const result = { authnParamsPublicKey: { challenge: 'c' }, verificationRequired: ['email'] };
+      passkeyClient.startSignup.mockResolvedValue(result);
+
+      const returned = await useAuth0(mockEvent).passkey.startSignup({ email: 'a@example.com' }, requestOptions);
+
+      expect(passkeyClient.startSignup).toHaveBeenCalledWith(
+        { email: 'a@example.com' },
+        { event: mockEvent },
+        requestOptions
+      );
+      expect(returned).toBe(result);
+    });
+
+    it('P2: startLogin forwards its options, with or without them', async () => {
+      const result = { authnParamsPublicKey: { challenge: 'c' } };
+      passkeyClient.startLogin.mockResolvedValue(result);
+      const auth0 = useAuth0(mockEvent);
+
+      expect(await auth0.passkey.startLogin({ realm: 'db' }, requestOptions)).toBe(result);
+      expect(passkeyClient.startLogin).toHaveBeenLastCalledWith({ realm: 'db' }, { event: mockEvent }, requestOptions);
+
+      await auth0.passkey.startLogin();
+      expect(passkeyClient.startLogin).toHaveBeenLastCalledWith(undefined, { event: mockEvent }, undefined);
+    });
+
+    it('P3: complete forwards the credential, the codes, the event and the request options', async () => {
+      const result = {};
+      passkeyClient.complete.mockResolvedValue(result);
+      const options = { credential, verification: { email: '123456' } };
+
+      const returned = await useAuth0(mockEvent).passkey.complete(options, requestOptions);
+
+      expect(passkeyClient.complete).toHaveBeenCalledWith(options, { event: mockEvent }, requestOptions);
+      expect(returned).toBe(result);
+    });
+
+    const calls = {
+      startSignup: (auth0: Auth0Client) => auth0.passkey.startSignup({ email: 'a@example.com' }),
+      startLogin: (auth0: Auth0Client) => auth0.passkey.startLogin(),
+      complete: (auth0: Auth0Client) => auth0.passkey.complete({ credential }),
+    };
+
+    it.each(Object.keys(calls) as Array<keyof typeof calls>)(
+      'P4: %s lets the error of the server client through unchanged',
+      async (method) => {
+        const error = new Error('boom');
+        passkeyClient[method].mockRejectedValue(error);
+
+        await expect(calls[method](useAuth0(mockEvent))).rejects.toBe(error);
+      }
+    );
+
+    it('P5: does not read the passkey client until a method is called', async () => {
+      const auth0 = useAuth0(mockEvent);
+      expect(readPasskeyClient).not.toHaveBeenCalled();
+
+      passkeyClient.startLogin.mockResolvedValue({});
+      await auth0.passkey.startLogin();
+
+      expect(readPasskeyClient).toHaveBeenCalledTimes(1);
+    });
   });
 });

@@ -9,6 +9,13 @@ import {
   type LoginBackchannelOptions,
   type LoginBackchannelResult,
   type LogoutOptions,
+  type PasskeyChallengeOptions,
+  type PasskeyCompleteOptions,
+  type PasskeyGetTokenResult,
+  type PasskeyRegisterOptions,
+  type PasskeyStartLoginResult,
+  type PasskeyStartSignupResult,
+  type RequestOptions,
   type StartInteractiveLoginOptions,
   type SessionData,
   type TokenSet,
@@ -20,6 +27,63 @@ import type { Auth0ClientOptions, RouteConfig, SessionStore } from '~/src/types'
 import { useRuntimeConfig } from '#imports';
 import { importMetaClient } from '../../helpers/import-meta';
 import { createRouteUrl } from '../utils/url';
+
+/**
+ * Passkey signup and login for server routes.
+ *
+ * A passkey flow takes two requests, because the WebAuthn calls only run in the browser. `startSignup()` or
+ * `startLogin()` returns the options for `navigator.credentials.create()` or `navigator.credentials.get()` and keeps
+ * the flow in the encrypted `__a0_passkey_tx` cookie. `complete()` exchanges the credential the browser made for
+ * tokens and writes the session, which is the same as after an OIDC login. The Auth0 `authSession` never reaches your
+ * code or the browser.
+ *
+ * Call these from server routes only: they read and write the cookies of the current request. The module mounts no
+ * passkey routes, so your own validation, rate limits and bot checks sit in front of them.
+ */
+export interface Auth0PasskeyClient {
+  /**
+   * Starts a passkey signup. When the connection verifies the email address or the phone number, Auth0 sends the
+   * one-time codes during this call, and the result lists the identifiers to verify in `verificationRequired`. Pass the
+   * codes to `complete()`.
+   *
+   * Every call starts a new flow and, when verification is required, sends new codes. Rate limit the route that calls
+   * this method yourself, per client IP address and per email address or phone number: anyone who can reach it can
+   * make Auth0 send messages. Validate the options first: the browser must not be able to choose `organization`,
+   * `userMetadata` or the `realm`.
+   *
+   * @param options The user's profile, the connection (`realm`) and `deliveryMethod` for the phone code.
+   * @param requestOptions Per-request options. `headers` is where `auth0-forwarded-for` goes, with the user's IP address.
+   * @throws {PasskeyRegisterError} When Auth0 refuses the request. `statusCode` is its HTTP status (429 when rate limited). Nothing is stored then.
+   * @throws {InvalidConfigurationError} When `stateIdentifier` or `transactionIdentifier` is a prefix of `__a0_passkey_tx`, or the reverse. Auth0 is not called.
+   */
+  startSignup: (options: PasskeyRegisterOptions, requestOptions?: RequestOptions) => Promise<PasskeyStartSignupResult>;
+
+  /**
+   * Starts a passkey login for an existing user.
+   *
+   * @param options The connection (`realm`). Without one, Auth0 uses the tenant's Default Directory.
+   * @param requestOptions Per-request options. `headers` is where `auth0-forwarded-for` goes, with the user's IP address.
+   * @throws {PasskeyChallengeError} When Auth0 refuses the request. `statusCode` is its HTTP status (429 when rate limited). Nothing is stored then.
+   * @throws {InvalidConfigurationError} When `stateIdentifier` or `transactionIdentifier` is a prefix of `__a0_passkey_tx`, or the reverse. Auth0 is not called.
+   */
+  startLogin: (options?: PasskeyChallengeOptions, requestOptions?: RequestOptions) => Promise<PasskeyStartLoginResult>;
+
+  /**
+   * Completes a signup or a login that `startSignup()` or `startLogin()` began in the same browser: exchanges the
+   * credential for tokens and writes the session. The flow, including the `authSession`, is read from the cookie, never
+   * from the request.
+   *
+   * @param options The credential the browser made, and one code for every identifier that still needs one.
+   * @param requestOptions Per-request options. `headers` is where `auth0-forwarded-for` goes, with the user's IP address.
+   * @throws {MissingTransactionError} When there is no flow, it expired, or a newer start replaced it. Auth0 is not called.
+   * @throws {MissingRequiredArgumentError} When the credential is missing or unreadable. Auth0 is not called and the flow is kept.
+   * @throws {PasskeyGetTokenError} When the exchange fails. `isRetryable` is true for a wrong code: ask again for `verificationRequired`
+   *   and send the same credential. Use `isMfaRequiredError(error)` for an MFA requirement, and never send `error.cause.mfa_token` to the browser.
+   * @throws {SessionExpiredError} When the ID token says the session has already expired. No session is created.
+   * @throws {InvalidConfigurationError} When `stateIdentifier` or `transactionIdentifier` is a prefix of `__a0_passkey_tx`, or the reverse. Auth0 is not called.
+   */
+  complete: (options: PasskeyCompleteOptions, requestOptions?: RequestOptions) => Promise<PasskeyGetTokenResult>;
+}
 
 export interface Auth0Client {
   startInteractiveLogin: (options?: StartInteractiveLoginOptions) => Promise<URL>;
@@ -36,6 +100,8 @@ export interface Auth0Client {
   loginBackchannel: (options: LoginBackchannelOptions) => Promise<LoginBackchannelResult>;
   logout: (options: LogoutOptions) => Promise<URL>;
   handleBackchannelLogout: (logoutToken: string) => Promise<void>;
+  /** Passkey signup and login. See {@link Auth0PasskeyClient}. */
+  passkey: Auth0PasskeyClient;
 }
 
 let instance: Auth0Client | undefined;
@@ -68,6 +134,12 @@ function toNuxtInstance(serverClient: ServerClient<{ event: H3Event }>, event: H
     loginBackchannel: (options: LoginBackchannelOptions) => serverClient?.loginBackchannel(options, { event }),
     logout: (options: LogoutOptions) => serverClient?.logout(options, { event }),
     handleBackchannelLogout: (logoutToken: string) => serverClient?.handleBackchannelLogout(logoutToken, { event }),
+    passkey: {
+      // `serverClient.passkey` is read when a method is called, so apps that do not use passkeys pay nothing.
+      startSignup: (options, requestOptions) => serverClient?.passkey.startSignup(options, { event }, requestOptions),
+      startLogin: (options, requestOptions) => serverClient?.passkey.startLogin(options, { event }, requestOptions),
+      complete: (options, requestOptions) => serverClient?.passkey.complete(options, { event }, requestOptions),
+    },
   };
 }
 
