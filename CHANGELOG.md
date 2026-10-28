@@ -1,5 +1,11 @@
 # Change Log
 
+## [auth0-nuxt-v1.3.0](https://github.com/auth0/auth0-nuxt/tree/auth0-nuxt-v1.3.0) (2026-10-28)
+[Full Changelog](https://github.com/auth0/auth0-nuxt/compare/auth0-nuxt-v1.2.1...auth0-nuxt-v1.3.0)
+
+**Added**
+- feat(auth0-nuxt): add passkey login and signup support [\#73](https://github.com/auth0/auth0-nuxt/pull/73) ([nandan-bhat](https://github.com/nandan-bhat))
+
 ## [auth0-nuxt-v1.2.1](https://github.com/auth0/auth0-nuxt/tree/auth0-nuxt-v1.2.1) (2026-10-07)
 [Full Changelog](https://github.com/auth0/auth0-nuxt/compare/auth0-nuxt-v1.2.0...auth0-nuxt-v1.2.1)
 
