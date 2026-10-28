@@ -24,5 +24,7 @@ export default defineVitestConfig({
   },
   test: {
     environment: 'nuxt',
+    // Writes .nuxt/tsconfig.json of the passkeys example on a fresh checkout (see the file).
+    globalSetup: ['./test/global-setup.ts'],
   },
 })

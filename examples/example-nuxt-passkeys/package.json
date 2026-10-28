@@ -1,0 +1,22 @@
+{
+  "name": "example-nuxt-passkeys",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "start": "npm run dev"
+  },
+  "dependencies": {
+    "@auth0/auth0-nuxt": "*",
+    "nuxt": "^4.4.2",
+    "vue": "^3.5.22",
+    "vue-router": "^4.6.2"
+  },
+  "devDependencies": {
+    "@nuxt/devtools": "^3.2.3",
+    "typescript": "~5.9.3"
+  }
+}
