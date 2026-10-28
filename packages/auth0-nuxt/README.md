@@ -145,6 +145,22 @@ export default defineEventHandler(async (event) => {
 
 With those in place, you will be able to call `auth/login` and `auth/logout` to log the user in and out of your application.
 
+#### Displaying the user
+
+Use the `useUser()` composable to read the authenticated user in a component. It returns a ref, which Vue unwraps automatically in the template, so you can use `user` directly without `.value`:
+
+```html
+<script setup lang="ts">
+const user = useUser();
+</script>
+
+<template>
+  <a v-if="user" href="/auth/logout">Log out ({{ user?.name }})</a>
+  <a v-if="!user" href="/auth/login">Log in</a>
+</template>
+```
+
+Inside `<script>`, such as in route middleware, access the user through `user.value` (see [section 4.1](#41-route-middleware)).
 
 ### 4. Protecting Routes
 

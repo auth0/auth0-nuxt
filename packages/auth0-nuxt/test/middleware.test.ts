@@ -24,7 +24,7 @@ describe('auth.server middleware', async () => {
   it('should populate the session on server-side render and expose it with the useUser hook', async () => {
     const encryptedSession = await encrypt(
       {
-        user: { sub: '<sub>' },
+        user: { sub: '<sub>', name: 'Jane Doe' },
         idToken: '<id_token>',
         refreshToken: '<refresh_token>',
         tokenSets: [],
@@ -57,5 +57,7 @@ describe('auth.server middleware', async () => {
     // The `app.vue` in the test fixture displays the logout link if the session is populated.
     const logoutLink = await page.getByTestId('logout-link');
     expect(await logoutLink.isVisible()).toBe(true);
+    // The template uses `user` without `.value`, so this checks that the ref is unwrapped.
+    expect((await logoutLink.textContent())?.trim()).toBe('Log out (Jane Doe)');
   });
 });

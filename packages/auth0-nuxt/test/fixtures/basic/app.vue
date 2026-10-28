@@ -8,7 +8,7 @@ const user = useUser();
       <ul class="nav">
         <li class="nav-item">
           <a v-if="user" class="nav-link link-body-emphasis px-2" href="/auth/logout" data-testid="logout-link"
-            >Log out</a
+            >Log out ({{ user?.name }})</a
           >
 
           <a v-if="!user" class="nav-link link-body-emphasis px-2" href="/auth/login" data-testid="login-link"
