@@ -559,10 +559,14 @@ async function post(path, body = {}) {
 
 // The session cookie is set. Read the user from the profile route of the module (`/auth/profile` unless you changed
 // `routes.profile`), so that the page updates without a reload. It answers `null` without a session, and with
-// `mountRoutes: false` a catch-all page can answer with HTML, so only an object is taken as the user.
+// `mountRoutes: false` a catch-all page can answer with HTML, so only an object is taken as the user. Without one,
+// this throws, so the functions below do not return `complete`: the passkey worked, but the page needs a reload.
 async function showUser() {
   const claims = await $fetch('/auth/profile', { headers: { accept: 'application/json' } });
-  if (claims && typeof claims === 'object') user.value = claims;
+  if (!claims || typeof claims !== 'object') {
+    throw new Error('You are logged in, but the profile could not be loaded. Reload the page.');
+  }
+  user.value = claims;
 }
 
 async function loginWithPasskey() {

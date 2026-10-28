@@ -937,10 +937,7 @@ describe('passkeys example: HTTP flows', async () => {
 
         expect(res.json).toEqual({ status: 'complete' });
         const [token] = await requestsTo('/oauth/token');
-        expect((token?.body as { authn_response: PasskeyCredentialResponse }).authn_response).toEqual({
-          ...credential,
-          clientExtensionResults,
-        });
+        expect(token?.body).toHaveProperty('authn_response', { ...credential, clientExtensionResults });
       });
 
       it('D6: other extension results are dropped, also when they are nested very deeply', async () => {
@@ -960,8 +957,7 @@ describe('passkeys example: HTTP flows', async () => {
 
         expect(res.json).toEqual({ status: 'complete' });
         const [token] = await requestsTo('/oauth/token');
-        const sent = token?.body as { authn_response: PasskeyCredentialResponse };
-        expect(sent.authn_response.clientExtensionResults).toEqual({ credProps: { rk: true } });
+        expect(token?.body).toHaveProperty('authn_response.clientExtensionResults', { credProps: { rk: true } });
       });
 
       it('D6: an extension result nested too deeply is answered with 400 `invalid` (not a 500), and Auth0 is not called', async () => {
