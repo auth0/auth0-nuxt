@@ -235,25 +235,7 @@ A route rule always wins over the module option, which wins over the built-in de
 >
 > Protect these routes with the server middleware from [section 4.2](#42-server-middleware) instead. It reads the session from the H3 event, which is unaffected by `ssrUser`. The distinction is that `ssrUser: false` removes the user from the *rendered payload*, not from the session.
 
-Nuxt does not pull a module's types into your `nuxt.config`'s type program, so for autocomplete on the `auth0` route-rule key, add this to a `.d.ts` in your project:
-
-```ts
-declare module 'nitropack' {
-  interface NitroRouteConfig {
-    auth0?: { ssrUser?: boolean };
-  }
-}
-
-declare module 'nitropack/types' {
-  interface NitroRouteConfig {
-    auth0?: { ssrUser?: boolean };
-  }
-}
-
-export {};
-```
-
-The rule is read at runtime whether or not it is typed.
+The `auth0` route-rule key is typed for you. The module registers the declaration with Nuxt, so it is in place after `nuxt prepare` with nothing to add to your own project.
 
 Client hydration runs once at app init, not on every navigation: where SSR wrote the user the plugin is a no-op, and where it did not, the fetched user carries across later navigations. So `ssrUser: false` controls what lands in the cached HTML, not whether the user is visible in the running app.
 
