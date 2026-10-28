@@ -55,6 +55,9 @@ describe('ssr', async () => {
     const logoutLink = page.getByTestId('logout-link');
     expect(await logoutLink.isVisible()).toBe(true);
 
+    // Expect the user's name to be rendered, as `user` is used in the template without `.value`
+    expect((await logoutLink.textContent())?.trim()).toMatch(/^Log out \(.+\)$/);
+
     // Logout
     await logoutLink.click();
 
