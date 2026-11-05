@@ -9,4 +9,3 @@ coverage
 package-lock.json
 .claude/settings.local.json
 .claude/worktrees/
-packages/auth0-nuxt/.nuxtrc
