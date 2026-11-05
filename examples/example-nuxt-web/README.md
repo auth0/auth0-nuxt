@@ -46,3 +46,14 @@ The application has 3 routes:
 In order to access the `/private` and route, you need to ensure the user is authenticated.
 
 Additionally, navigating to the `/private` endpoint, without being authenticated, will redirect the user to the Auth0, and then redirect them back to the `/private` route after authentication.
+
+## Tests
+
+The tests in `test/` run the built example in its own process and drive it over HTTP. They need no Auth0 tenant and no `.env`: `test/support/auth0-mock.mjs` is preloaded into the example's process (`node --import`) and uses [MSW](https://mswjs.io) to answer the requests the SDK sends to Auth0 (discovery, signing keys and the token endpoint). The tests play the browser: they follow the redirects, approve the login by calling the callback, and keep the cookies.
+
+```bash
+npm run build -w example-nuxt-web   # the tests start the build in .output
+npm run test -w example-nuxt-web
+```
+
+From the root of the repository, `npx turbo run test --filter=example-nuxt-web` builds the example first and then runs the tests.
