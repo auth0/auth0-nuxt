@@ -7,7 +7,8 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "start": "npm run dev"
+    "start": "npm run dev",
+    "test": "vitest run"
   },
   "dependencies": {
     "@auth0/auth0-nuxt": "*",
@@ -19,6 +20,9 @@
     "@nuxt/devtools": "^3.2.3",
     "@nuxt/eslint-config": "^1.15.2",
     "eslint": "^9.37.0",
-    "typescript": "~5.9.3"
+    "jose": "^6.2.15",
+    "msw": "^2.15.0",
+    "typescript": "~5.9.3",
+    "vitest": "^4.1.12"
   }
 }

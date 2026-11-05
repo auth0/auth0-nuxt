@@ -53,6 +53,9 @@ jobs:
       - name: Test auth0-nuxt
         run: npm run test:ci -w @auth0/auth0-nuxt
 
+      - name: Test example-nuxt-web
+        run: npm run test -w example-nuxt-web
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
