@@ -30,4 +30,4 @@ Ask before running the live-tenant test. Without the variables it fails — expe
 - `test/encryption.ts` encrypts a session the way the SDK does, to hand a test a valid session cookie.
 - The `passkeys` fixture runs the app and server code of `examples/example-nuxt-passkeys` against the module **source** with a fake Auth0 (`fixtures/passkeys/fakes/`). Shared helpers are in `test/passkeys.shared.ts`.
 - `NUXT_AUTH0_*` / `NUXT_PASSKEY_*` environment variables override `runtimeConfig` when the server starts. CI exports real tenant values, so fixtures that use a fake call `ignoreNuxtEnv()` (from `test/passkeys.shared.ts`) before `setup()`.
-- `test/passkeys-docs.test.ts` keeps the passkeys docs true: the code in `EXAMPLES.md` must equal the example's code, and links must resolve. Changing the passkeys example or its docs means running it.
+- `test/passkeys-docs.test.ts` keeps the passkeys docs true: the route files and `completeFailure()` in `EXAMPLES.md` must equal the example's code, and links must resolve. Other code blocks are not compared. Changing the passkeys example or its docs means running it.

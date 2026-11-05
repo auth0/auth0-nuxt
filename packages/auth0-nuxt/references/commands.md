@@ -18,7 +18,7 @@ npm run test:e2e -w @auth0/auth0-nuxt
 # Unit + e2e (`pretest` runs `npx playwright install` first)
 npm test -w @auth0/auth0-nuxt
 
-# What CI runs: vitest with coverage (`pretest:ci` installs the Playwright browsers)
+# What CI runs: vitest with coverage, including the live-tenant rendering.test.ts (ask first). `pretest:ci` installs the Playwright browsers.
 npm run test:ci -w @auth0/auth0-nuxt
 
 # Remove dist/
