@@ -19,7 +19,19 @@ This is a Turborepo + npm-workspaces monorepo. **Run build/test/lint with `-w <p
 
 Shared root config affects every package: `turbo.json` (task graph), `commitlint.config.mjs` (commit and PR-title rules), `vitest.workspace.js`, `.shiprc` (release tooling).
 
-The one repo-wide command is `npm run build` (Turborepo: the package first, then the examples; this is what CI runs).
+---
+
+## Commands
+
+Run from the repo root. `npm install` also installs the husky `commit-msg` hook (via `prepare`); there is no lockfile.
+
+```bash
+npm run build   # Turborepo: the package first, then the examples (what CI runs)
+npm run clean   # Turborepo: runs each package's clean (removes dist/)
+npm run docs    # regenerate docs/ with TypeDoc (output is committed; never hand-edit)
+```
+
+`npm run lint` and `npm test` are Turborepo tasks too, but only `@auth0/auth0-nuxt` defines them (the examples define `build` only), and root `npm test` runs its full suite including the live-tenant e2e test. Prefer the per-package form, as CI does: `npm run lint -w @auth0/auth0-nuxt`, `npm run test:unit -w @auth0/auth0-nuxt`. The rest of the commands live in the package's `AGENTS.md`.
 
 ---
 
