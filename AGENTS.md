@@ -1,85 +1,38 @@
-# AGENTS.md
+# AI Agent Guidelines for auth0-nuxt
 
-Guidance for AI coding agents working in this repository. Nested `AGENTS.md` files add (and override) rules for their
-directory; the closest file to the code you are editing wins.
+## Your Role
 
-| Path | Read when |
-|---|---|
-| [`packages/auth0-nuxt/AGENTS.md`](packages/auth0-nuxt/AGENTS.md) | Changing the SDK (`@auth0/auth0-nuxt`): module, runtime, tests |
-| [`examples/AGENTS.md`](examples/AGENTS.md) | Changing or adding an example app |
+You are a TypeScript SDK engineer on the auth0-nuxt monorepo, the Auth0 authentication module for Nuxt applications. You write small, well-tested, framework-idiomatic code.
 
-## Repository overview
+---
 
-npm-workspaces monorepo (`packages/*`, `examples/*`), orchestrated by [Turborepo](turbo.json).
+## Workspace Packages
 
-- `packages/auth0-nuxt`: the only published package, `@auth0/auth0-nuxt`, a Nuxt module for Auth0 authentication.
-  Built on `@auth0/auth0-server-js`.
-- `examples/*`: private Nuxt apps (Nuxt 3, Nuxt 4, Nuxt 4 + passkeys) that consume the package through the workspace.
-- `docs/`: generated TypeDoc output. **Do not hand-edit**; regenerate with `npm run docs`.
+This is a Turborepo + npm-workspaces monorepo. **Run build/test/lint with `-w <package>` (or from the package directory), not blindly at the repo root** — each package has its own manifest, test suite, and conventions.
 
-## Commands
+| Package | Path | Purpose |
+|---------|------|---------|
+| `@auth0/auth0-nuxt` | `packages/auth0-nuxt` | Nuxt module for Auth0 authentication (published to npm) |
+| `@auth0/lint-pr-title` | `packages/lint-pr-title` | Private GitHub Action that lints PR titles with commitlint |
 
-Run from the repo root. Node 22 or 24 (the CI matrix) with npm; install with `npm install`, which also installs the
-husky hook.
+`examples/*` are private sample Nuxt apps that are workspace members too. They consume `@auth0/auth0-nuxt` through its built `dist/`, so a change to the module can break them — build the package first. `lint-pr-title` is independent of the module.
 
-```bash
-npm run build       # turbo: build the package, then the examples
-npm run lint        # turbo: eslint
-npm run typecheck   # turbo: builds the package, then tsc --noEmit
-npm run test:unit   # co-located *.spec.ts unit tests (Nuxt vitest environment; may write .nuxt/ and .nuxtrc)
-npm test            # unit + e2e (see packages/auth0-nuxt/AGENTS.md for e2e prerequisites)
-npm run docs        # regenerate docs/ with TypeDoc
-```
+Shared root config affects every package: `turbo.json` (task graph), `commitlint.config.mjs` (commit and PR-title rules), `vitest.workspace.js`, `.shiprc` (release tooling).
 
-Target a single package with `-w`, e.g. `npm run test:unit -w @auth0/auth0-nuxt`. Examples must be built after the
-package (`npm run build` at the root handles the order); they resolve `@auth0/auth0-nuxt` through the built `dist/`.
+The one repo-wide command is `npm run build` (Turborepo: the package first, then the examples; this is what CI runs).
 
-## Boundaries
+---
 
-### Always
+## Git Workflow
 
-- Run `npm run lint`, `npm run typecheck` and `npm run test:unit` before declaring work done, and report any you could
-  not run.
-- Add or update tests with every behavior change.
-- Update docs in the same change when public behavior changes: `packages/auth0-nuxt/README.md`,
-  `packages/auth0-nuxt/EXAMPLES.md`, and the affected example.
-- Keep changes surgical: touch only what the task requires and match surrounding style.
+### Branch Naming
 
-### Ask first
+Release branches use the `release/*` prefix: `release.yml` publishes when a PR from a `release/*` branch is merged. Other branches have no enforced pattern.
 
-- Any breaking change to the public API or to default behavior. See the SDK's AGENTS.md for what counts.
-- Adding or bumping runtime dependencies.
-- Changes to `.github/workflows/`, `.github/actions/`, `.shiprc`, `commitlint.config.mjs` or the Turbo config.
+### Commit Messages
 
-### Never
+[Conventional Commits](https://www.conventionalcommits.org/), enforced by commitlint (`commitlint.config.mjs`) in three places: the husky `commit-msg` hook, `npx commitlint --last` on pushes to `main`, and the `lint-pr-title` action on PR titles. When a scope is given it **must be** `auth0-nuxt` or `release` (`scope-enum`); a missing scope is not rejected, but always include one, e.g. `fix(auth0-nuxt): reject cross-origin returnTo`. `Release …` commits and `chore(release): <tag>` PRs come from the release tooling (`.shiprc`); don't create them by hand.
 
-- Commit secrets, `.env` files, tokens or tenant credentials.
-- Log or expose tokens, session secrets, client secrets or authorization codes.
-- Hand-edit `docs/`, `dist/`, `.nuxt/` or `.output/`.
-- Commit `package-lock.json`. The repo deliberately has no lockfile (private-registry support); it is gitignored.
-- Hand-edit versions, `.version` or `CHANGELOG.md`; releases are automated (see below).
-- Skip or delete a failing test instead of fixing the cause.
+### Pull Requests
 
-## Commits and pull requests
-
-- [Conventional Commits](https://www.conventionalcommits.org/), enforced by commitlint locally (husky `commit-msg`
-  hook) and on the PR title in CI.
-- A scope, when given, **must be** `auth0-nuxt` or `release` (`scope-enum` in `commitlint.config.mjs`; a missing
-  scope is not rejected). Always include one, for example `fix(auth0-nuxt): reject cross-origin returnTo`. Use `chore(release): <tag>` only for release PRs.
-- Open PRs against `main` using `.github/PULL_REQUEST_TEMPLATE.md`; complete every section.
-- Write PR descriptions and commit bodies about **why**: the problem, the motivation, trade-offs, risks and anything a
-  reviewer cannot read off the diff. Do not list changes file by file or item by item; the diff already shows that.
-  Keep "what" to a sentence or two of orientation. In "Testing", state how the change was verified and what was not.
-- `Release …` commits are generated by the release tooling. Do not create them by hand.
-
-## Releases and CI
-
-- Releases are automated with [Ship](.shiprc). It bumps `packages/auth0-nuxt/.version` and the root `package.json`
-  version, and merging a `release/*` branch triggers `.github/workflows/release.yml`.
-- CI (`.github/workflows`): build, typecheck and test on Node 22 and 24, lint, build examples, PR title lint, SCA scan.
-- Pin third-party GitHub Actions to a commit SHA and keep `permissions` least-privilege.
-
-## Formatting
-
-Prettier settings live in `packages/auth0-nuxt/.prettierrc` (single quotes, 120 columns, ES5 trailing commas, always
-parenthesize arrow params). ESLint (`typescript-eslint` recommended) is the enforced linter.
+No local PR template — the [Auth0 org-level template](https://github.com/auth0/.github/blob/master/.github/PULL_REQUEST_TEMPLATE.md) applies. Fill in **Description**, **References**, **Testing**, and the **Checklist** (the PR adds test coverage, adds documentation for new/changed functionality, and targets the correct base branch). Write the description about **why** — the problem, motivation, trade-offs and risks a reviewer cannot read off the diff — not a file-by-file change list; in Testing, say how the change was verified and what was not.
