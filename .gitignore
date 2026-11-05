@@ -6,3 +6,6 @@ coverage
 
 .nuxt/
 .output/
+.claude/settings.local.json
+.claude/worktrees/
+packages/auth0-nuxt/.nuxtrc
