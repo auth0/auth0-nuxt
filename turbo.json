@@ -3,7 +3,7 @@
     "tasks": {
       "build": {
         "dependsOn": ["^build"],
-        "outputs": ["dist/**"]
+        "outputs": ["dist/**", ".nuxt/**"]
       },
       "clean": {
         "dependsOn": ["^clean"]

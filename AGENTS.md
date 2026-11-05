@@ -26,7 +26,7 @@ husky hook.
 npm run build       # turbo: build the package, then the examples
 npm run lint        # turbo: eslint
 npm run typecheck   # turbo: builds the package, then tsc --noEmit
-npm run test:unit   # fast: co-located *.spec.ts unit tests only
+npm run test:unit   # co-located *.spec.ts unit tests (Nuxt vitest environment; may write .nuxt/ and .nuxtrc)
 npm test            # unit + e2e (see packages/auth0-nuxt/AGENTS.md for e2e prerequisites)
 npm run docs        # regenerate docs/ with TypeDoc
 ```
@@ -55,7 +55,8 @@ package (`npm run build` at the root handles the order); they resolve `@auth0/au
 
 - Commit secrets, `.env` files, tokens or tenant credentials.
 - Log or expose tokens, session secrets, client secrets or authorization codes.
-- Hand-edit `docs/`, `dist/`, `.nuxt/`, `.output/` or `package-lock.json`.
+- Hand-edit `docs/`, `dist/`, `.nuxt/` or `.output/`.
+- Commit `package-lock.json`. The repo deliberately has no lockfile (private-registry support); it is gitignored.
 - Hand-edit versions, `.version` or `CHANGELOG.md`; releases are automated (see below).
 - Skip or delete a failing test instead of fixing the cause.
 
@@ -63,8 +64,8 @@ package (`npm run build` at the root handles the order); they resolve `@auth0/au
 
 - [Conventional Commits](https://www.conventionalcommits.org/), enforced by commitlint locally (husky `commit-msg`
   hook) and on the PR title in CI.
-- The scope is **required to be one of** `auth0-nuxt` or `release` (see `commitlint.config.mjs`), for example
-  `fix(auth0-nuxt): reject cross-origin returnTo`. Use `chore(release): <tag>` only for release PRs.
+- A scope, when given, **must be** `auth0-nuxt` or `release` (`scope-enum` in `commitlint.config.mjs`; a missing
+  scope is not rejected). Always include one, for example `fix(auth0-nuxt): reject cross-origin returnTo`. Use `chore(release): <tag>` only for release PRs.
 - Open PRs against `main` using `.github/PULL_REQUEST_TEMPLATE.md`; complete every section.
 - Write PR descriptions and commit bodies about **why**: the problem, the motivation, trade-offs, risks and anything a
   reviewer cannot read off the diff. Do not list changes file by file or item by item; the diff already shows that.
@@ -75,7 +76,7 @@ package (`npm run build` at the root handles the order); they resolve `@auth0/au
 
 - Releases are automated with [Ship](.shiprc). It bumps `packages/auth0-nuxt/.version` and the root `package.json`
   version, and merging a `release/*` branch triggers `.github/workflows/release.yml`.
-- CI (`.github/workflows`): build and test on Node 22 and 24, lint, typecheck, build examples, PR title lint, SCA scan.
+- CI (`.github/workflows`): build, typecheck and test on Node 22 and 24, lint, build examples, PR title lint, SCA scan.
 - Pin third-party GitHub Actions to a commit SHA and keep `permissions` least-privilege.
 
 ## Formatting

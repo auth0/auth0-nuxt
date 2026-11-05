@@ -16,7 +16,7 @@ src/
     middleware/auth.server.ts         # global route middleware `auth0`
     server/api/auth/*.ts              # login, callback, logout, backchannel-logout, profile handlers
     server/composables/use-auth0.ts   # `useAuth0(event)`: server-only auth client (login, logout, passkeys, tokens)
-    server/plugins/auth.server.ts     # Nitro plugin: SSR user + route rules
+    server/plugins/auth.server.ts     # Nitro plugin: resolves the SSR user (route rules are set in module.ts)
     server/utils/                     # cookie-handler, url (toSafeRedirect), resolve-ssr-user, default session store
 test/                           # Nuxt e2e tests (*.test.ts) + fixtures/ (small Nuxt apps built per test)
 dist/                           # build output of `nuxt-module-build`; generated, never edit
