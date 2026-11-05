@@ -116,7 +116,7 @@ export default defineNuxtConfig({
 });
 ```
 
-Where `~/server/utils/session-store-factory.ts` is the path to your session store factory. The session store factory should `default export` a factory function that returns an instance implementing the `SessionStore` interface from the SDK.
+Where `~/server/utils/session-store-factory.ts` is the path to your session store factory. The session store factory should `default export` a factory function that returns an instance implementing the `SessionStore` interface from the SDK. The [stateful sessions example app](https://github.com/auth0/auth0-nuxt/tree/main/examples/example-nuxt-stateful-sessions) is a complete app that uses such a store.
 
 ```ts
 import type { SessionStore, StateData, StoreOptions } from '@auth0/auth0-nuxt';
@@ -638,7 +638,7 @@ By default, the SDK uses a stateless session, meaning that the session data is s
 }
 ```
 
-Where `~/server/utils/session-store-factory.ts` is the path to your session store factory. The session store factory should `default export` a factory function that returns an instance implementing the `SessionStore` interface from the SDK.
+Where `~/server/utils/session-store-factory.ts` is the path to your session store factory. The session store factory should `default export` a factory function that returns an instance implementing the `SessionStore` interface from the SDK. The [stateful sessions example app](https://github.com/auth0/auth0-nuxt/tree/main/examples/example-nuxt-stateful-sessions) is a complete app that uses such a store.
 
 Here's an example of a session store factory that uses Redis as the persistence layer, integrated through [the storage layer integrated in nuxt](https://nitro.build/guide/storage):
 
