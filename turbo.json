@@ -3,13 +3,17 @@
     "tasks": {
       "build": {
         "dependsOn": ["^build"],
-        "outputs": ["dist/**"]
+        "outputs": ["dist/**", ".nuxt/**"]
       },
       "clean": {
         "dependsOn": ["^clean"]
       },
       "test": {
         "dependsOn": ["^test"]
+      },
+      "test:unit": {},
+      "typecheck": {
+        "dependsOn": ["build"]
       },
       "lint": {
         "dependsOn": [

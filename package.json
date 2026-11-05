@@ -9,6 +9,8 @@
     "build": "turbo run build",
     "clean": "turbo run clean",
     "test": "turbo run test",
+    "test:unit": "turbo run test:unit",
+    "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
     "docs": "typedoc",
     "prepare": "husky"
