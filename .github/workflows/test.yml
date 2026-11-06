@@ -53,6 +53,12 @@ jobs:
       - name: Test auth0-nuxt
         run: npm run test:ci -w @auth0/auth0-nuxt
 
+      - name: Upload coverage
+        if: matrix.node == 24
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # pin@7.1.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
