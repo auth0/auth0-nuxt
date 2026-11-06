@@ -70,7 +70,7 @@ This is a published authentication SDK; review your own changes with an attacker
 - **PKCE:** the login redirect carries an S256 `code_challenge`; the code verifier lives in the transaction cookie that `callback` needs. The authorization request carries no `state`/`nonce` — don't assume they exist.
 - **Backchannel logout:** `handleBackchannelLogout` verifies the logout token before the store deletes any session; failures answer 400.
 - **Profile route:** `/auth/profile` answers `Cache-Control: no-store` + `Vary: Cookie`, and `module.ts` sets `cache: false` on its route rule (outside the `mountRoutes` guard) because Nitro's cache ignores cookies and would serve one user's claims to another. The handler has no try/catch on purpose: a session-read failure must 500, not look signed out.
-- **Server-only code:** `runtime/server/**` and `useAuth0` must stay out of the client bundle (see the comment in `runtime/server/plugins/auth.server.ts` about `getRouteRules`).
+- **Server-only code:** `runtime/server/**` and `useAuth0` must stay out of the client bundle (see "Route middleware ships to the client" in [references/pitfalls.md](references/pitfalls.md)).
 - **Passkey routes:** the module does not mount them; `examples/example-nuxt-passkeys` shows the Origin check, rate limit and `no-store` the app must add — keep that example secure when editing it.
 
 ---
@@ -107,7 +107,7 @@ See [references/code-style.md](references/code-style.md) for real good/bad examp
 
 ## Common Pitfalls
 
-See [references/pitfalls.md](references/pitfalls.md) for build, tooling and test gotchas (the `.nuxt` prerequisite, stale `build:watch`, generated `.nuxtrc`, examples consuming `dist/`, `NUXT_*` env overrides). Read when a build or test fails unexpectedly.
+See [references/pitfalls.md](references/pitfalls.md) for build, tooling and test gotchas (the `.nuxt` prerequisite, stale `build:watch`, generated `.nuxtrc`, examples consuming `dist/`, `NUXT_*` env overrides, route middleware in the client bundle, telemetry). Read when a build or test fails unexpectedly.
 
 ## Docs Update Rules
 
