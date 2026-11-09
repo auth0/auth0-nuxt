@@ -3,7 +3,7 @@ import { ServerClient, type SessionStore } from '@auth0/auth0-server-js';
 import { defineNitroPlugin } from 'nitropack/dist/runtime/plugin';
 import { getRouteRules } from 'nitropack/runtime';
 import { resolveSsrUser } from '../utils/resolve-ssr-user';
-import type { StoreOptions } from '~/src/types';
+import type { StoreOptions } from '../../../types';
 
 declare module 'h3' {
   interface H3EventContext {
