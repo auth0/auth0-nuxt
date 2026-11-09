@@ -23,7 +23,7 @@ import {
 } from '@auth0/auth0-server-js';
 import type { AuthorizationDetails } from '@auth0/auth0-auth-js';
 import { NuxtCookieHandler } from '../utils/cookie-handler';
-import type { Auth0ClientOptions, RouteConfig, SessionStore } from '../../../types';
+import type { Auth0ClientOptions, RouteConfig, SessionStore } from '~/src/types';
 import { useRuntimeConfig } from '#imports';
 import { importMetaClient } from '../../helpers/import-meta';
 import { createRouteUrl } from '../utils/url';

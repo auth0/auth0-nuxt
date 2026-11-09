@@ -1,6 +1,6 @@
 import type { CookieHandler, CookieSerializeOptions } from '@auth0/auth0-server-js';
 import { setCookie, deleteCookie, getCookie, parseCookies } from 'h3';
-import type { StoreOptions } from '../../../types';
+import type { StoreOptions } from '~/src/types';
 
 /**
  * A Nuxt-specific implementation of the CookieHandler interface.
