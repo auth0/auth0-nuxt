@@ -1,0 +1,19 @@
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+    patch:
+      default:
+        target: 80%
+        threshold: 0%
+
+ignore:
+  - "**/*.spec.ts"
+  - "packages/*/test/**"
+  - "examples/**"
+
+comment:
+  layout: "condensed_header, diff, files"
+  require_changes: true
