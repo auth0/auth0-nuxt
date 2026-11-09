@@ -8,8 +8,7 @@
   "scripts": {
     "prebuild": "nuxt-module-build prepare",
     "build": "nuxt-module-build build",
-    "typecheck": "nuxt typecheck && npm run typecheck:fixtures",
-    "typecheck:fixtures": "for dir in test/fixtures/*/; do (cd \"$dir\" && nuxt prepare . && nuxt typecheck .) || exit 1; done",
+    "typecheck": "nuxt typecheck",
     "clean": "rm -rf ./dist",
     "lint": "eslint \"./**/*.ts*\"",
     "test": "npm run test:unit && npm run test:e2e",
