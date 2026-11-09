@@ -11,7 +11,35 @@ permissions:
   id-token: write # For publishing to npm using --provenance
 
 jobs:
+  version:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.merged && startsWith(github.event.pull_request.head.ref, 'release/'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - id: get_version
+        uses: ./.github/actions/get-version
+        with:
+          working-directory: ./packages/auth0-nuxt
+
+  rl-scan:
+    needs: version
+    permissions:
+      contents: read
+      id-token: write # For AWS OIDC federation in the RL scan
+    uses: ./.github/workflows/rl.yml
+    with:
+      artifact-name: auth0-nuxt
+      artifact-path: auth0-nuxt.tgz
+      version: ${{ needs.version.outputs.version }}
+    secrets: inherit
+
   release:
+    needs: [version, rl-scan]
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.merged && startsWith(github.event.pull_request.head.ref, 'release/'))
     runs-on: ubuntu-latest
     environment: release

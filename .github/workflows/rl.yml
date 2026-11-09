@@ -3,16 +3,15 @@ run-name: rl-scan
 
 # Reusable malware-scan workflow — call this from your release or CI pipeline via
 # workflow_call. The trigger lives in the calling workflow; the build steps are
-# defined here as a placeholder that you replace with your own toolchain setup,
-# compilation, and packaging steps before merging.
+# defined here: they build and pack @auth0/auth0-nuxt into the npm tarball.
 #
 # Caller pattern (minimal):
 #   jobs:
 #     release-and-scan:
 #       uses: ./.github/workflows/rl.yml
 #       with:
-#         artifact-name: my-artifact
-#         artifact-path: dist/my-artifact.tgz
+#         artifact-name: auth0-nuxt
+#         artifact-path: auth0-nuxt.tgz
 #         version: ${{ github.event.release.tag_name }}
 #       secrets: inherit
 #
@@ -77,16 +76,27 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       # ── Build the artifact ────────────────────────────────────────────────────
-      # Replace this placeholder with ALL steps required to produce the artifact,
-      # including: runtime/toolchain setup (e.g. actions/setup-node, setup-go,
-      # setup-dotnet), dependency installation, compilation, and packaging (e.g.
-      # tar, zip, docker save). The final step must place the artifact at the
-      # path passed as inputs.artifact-path. The rl-scan action uses [ -f ] to
-      # verify the file exists — a missing or incorrect path fails the job.
-      - name: Build artifact   # TODO: replace with your toolchain setup + build + package steps
+      # Builds the auth0-nuxt package and packs it into the npm tarball that is
+      # published on release, then moves it to inputs.artifact-path.
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: npm i --include=dev
+
+      - name: Build package
+        run: npx turbo run build --filter="{./packages/*}"
+
+      - name: Pack artifact
+        env:
+          ARTIFACT_PATH: ${{ inputs.artifact-path }}
         run: |
-          echo "TODO: replace this step with your build commands"
-          echo "      The built file must be at: ${{ inputs.artifact-path }}"
+          TARBALL=$(npm pack --workspace @auth0/auth0-nuxt --pack-destination "$RUNNER_TEMP" --silent | tail -1)
+          mkdir -p "$(dirname "$ARTIFACT_PATH")"
+          mv "$RUNNER_TEMP/$TARBALL" "$ARTIFACT_PATH"
 
       - name: Run RL malware scan
         id: rl-scan-conclusion
