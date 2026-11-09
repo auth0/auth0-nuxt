@@ -11,8 +11,6 @@ inputs:
     default: true
   release-directory:
     default: './'
-  tarball:
-    default: ''
 
 runs:
   using: composite
@@ -32,12 +30,11 @@ runs:
       run: npm install -g npm@latest
 
     - name: Install dependencies
-      if: inputs.tarball == ''
       shell: bash
       run: npm i --include=dev
 
     - name: Build package
-      if: inputs.tarball == '' && inputs.require-build == 'true'
+      if: inputs.require-build == 'true'
       shell: bash
       run: npx turbo run build --filter="{./packages/*}"
 
@@ -52,7 +49,6 @@ runs:
         else
           TAG="latest"
         fi
-        npm publish "${PUBLISH_TARGET}" --provenance --tag $TAG --registry https://registry.npmjs.org
+        npm publish --provenance --tag $TAG --registry https://registry.npmjs.org
       env:
         VERSION: ${{ inputs.version }}
-        PUBLISH_TARGET: ${{ inputs.tarball || '.' }}

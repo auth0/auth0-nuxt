@@ -12,9 +12,6 @@ inputs:
   release-directory:
     default: './'
     type: string
-  tarball:
-    default: ''
-    type: string
   github-token:
     required: true
 
@@ -64,7 +61,6 @@ runs:
         require-build: ${{ inputs.require-build }}
         version: ${{ steps.get_version.outputs.version }}
         release-directory: ${{ inputs.release-directory }}
-        tarball: ${{ inputs.tarball }}
 
     # Create a release for the tag
     - uses: ./.github/actions/release-create
