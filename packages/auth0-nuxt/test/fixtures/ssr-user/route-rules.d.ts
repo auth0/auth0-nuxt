@@ -1,1 +1,1 @@
-/// <reference path="../../../src/types/route-rules.d.ts" />
+import '../../../src/types/route-rules';
