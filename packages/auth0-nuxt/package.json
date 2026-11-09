@@ -8,6 +8,7 @@
   "scripts": {
     "prebuild": "nuxt-module-build prepare",
     "build": "nuxt-module-build build",
+    "build:watch": "tsup --watch",
     "typecheck": "nuxt typecheck",
     "clean": "rm -rf ./dist",
     "lint": "eslint \"./**/*.ts*\"",
