@@ -1,0 +1,23 @@
+name: RL Scan (test)
+
+# TEMPORARY: exercises rl.yml on this PR without publishing anything.
+# Remove before merging.
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  rl-scan:
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/rl.yml
+    with:
+      artifact-name: auth0-nuxt
+      artifact-path: auth0-nuxt.tgz
+      version: v0.0.0-test
+    secrets: inherit
