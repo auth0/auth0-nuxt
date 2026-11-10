@@ -6,3 +6,6 @@ coverage
 
 .nuxt/
 .output/
+package-lock.json
+.claude/settings.local.json
+.claude/worktrees/
