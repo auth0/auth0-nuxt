@@ -2,7 +2,7 @@
 
 - [Configuration](#configuration)
   - [Basic configuration](#basic-configuration)
-  - [Configuring the mountes routes](#configuring-the-mountes-routes)
+  - [Configuring the mounted routes](#configuring-the-mounted-routes)
   - [Configuring Stateful Sessions](#configuring-stateful-sessions)
   - [Customizing State and Transaction Identifiers](#customizing-state-and-transaction-identifiers)
 - [Protecting Routes](#protecting-routes)
@@ -70,7 +70,7 @@ NUXT_AUTH0_APP_BASE_URL=http://localhost:3000
 NUXT_AUTH0_SESSION_SECRET=<YOUR_LONG_RANDOM_SECRET>
 ```
 
-### Configuring the mountes routes
+### Configuring the mounted routes
 The SDK for Nuxt Web Applications mounts 5 main routes:
 
 1. `/auth/login`: the login route that the user will be redirected to to initiate an authentication transaction.
