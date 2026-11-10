@@ -8,7 +8,6 @@
   "scripts": {
     "prebuild": "nuxt-module-build prepare",
     "build": "nuxt-module-build build",
-    "build:watch": "tsup --watch",
     "typecheck": "nuxt typecheck",
     "clean": "rm -rf ./dist",
     "lint": "eslint \"./**/*.ts*\"",
@@ -54,7 +53,6 @@
     "nuxt": "^4.4.2",
     "playwright": "^1.53.2",
     "playwright-core": "^1.53.2",
-    "tsup": "^8.4.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.24.0",
     "vitest": "^4.0.2",
