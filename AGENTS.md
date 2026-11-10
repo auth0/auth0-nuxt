@@ -17,7 +17,7 @@ This is a Turborepo + npm-workspaces monorepo. **Run build/test/lint with `-w <p
 
 `examples/*` are private sample Nuxt apps that are workspace members too. They consume `@auth0/auth0-nuxt` through its built `dist/`, so a change to the module can break them — build the package first. `lint-pr-title` is independent of the module.
 
-Shared root config affects every package: `turbo.json` (task graph), `commitlint.config.mjs` (commit and PR-title rules), `vitest.workspace.js`, `.shiprc` (release tooling).
+Shared root config affects every package: `turbo.json` (task graph), `commitlint.config.mjs` (commit and PR-title rules), `.shiprc` (release tooling).
 
 ---
 

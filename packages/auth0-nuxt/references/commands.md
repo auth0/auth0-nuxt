@@ -40,4 +40,4 @@ npx turbo run build --filter="{./examples/*}"      # only the examples (the Buil
 npm run docs                                       # regenerate docs/ with TypeDoc (entry point: src/module.ts)
 ```
 
-There is no `typecheck` or `format` script. `build:watch` is stale — see [pitfalls.md](pitfalls.md).
+There is no `typecheck` or `format` script.

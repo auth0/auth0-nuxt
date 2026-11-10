@@ -107,7 +107,7 @@ See [references/code-style.md](references/code-style.md) for real good/bad examp
 
 ## Common Pitfalls
 
-See [references/pitfalls.md](references/pitfalls.md) for build, tooling and test gotchas (the `.nuxt` prerequisite, stale `build:watch`, generated `.nuxtrc`, examples consuming `dist/`, `NUXT_*` env overrides, route middleware in the client bundle, telemetry). Read when a build or test fails unexpectedly.
+See [references/pitfalls.md](references/pitfalls.md) for build, tooling and test gotchas (the `.nuxt` prerequisite, generated `.nuxtrc`, examples consuming `dist/`, `NUXT_*` env overrides, route middleware in the client bundle, telemetry). Read when a build or test fails unexpectedly.
 
 ## Docs Update Rules
 
