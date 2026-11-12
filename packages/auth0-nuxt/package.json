@@ -8,6 +8,7 @@
   "scripts": {
     "prebuild": "nuxt-module-build prepare",
     "build": "nuxt-module-build build",
+    "typecheck": "nuxt typecheck",
     "clean": "rm -rf ./dist",
     "lint": "eslint \"./**/*.ts*\"",
     "test": "npm run test:unit && npm run test:e2e",
@@ -54,7 +55,8 @@
     "playwright-core": "^1.53.2",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.24.0",
-    "vitest": "^4.0.2"
+    "vitest": "^4.0.2",
+    "vue-tsc": "^3.3.14"
   },
   "dependencies": {
     "@auth0/auth0-server-js": "^1.17.0",

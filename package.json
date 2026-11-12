@@ -9,6 +9,7 @@
     "build": "turbo run build",
     "clean": "turbo run clean",
     "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
     "docs": "typedoc",
     "prepare": "husky"
@@ -21,7 +22,7 @@
     "@commitlint/cli": "^20.1.0",
     "@commitlint/config-conventional": "^20.0.0",
     "husky": "^9.1.7",
-    "turbo": "^2.4.4",
+    "turbo": "^2.8.13",
     "typedoc": "^0.28.7"
   }
 }

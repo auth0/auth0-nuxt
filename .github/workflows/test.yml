@@ -50,6 +50,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Typecheck
+        run: npm run typecheck
+
       - name: Test auth0-nuxt
         run: npm run test:ci -w @auth0/auth0-nuxt
 
